@@ -61,8 +61,7 @@ def main():
 
     # save fort22
     if args.save_path is not None:
-        with open(Path(args.save_path), 'w') as output_file:
-            output_file.write(str(bt))
+        bt.to_file(args.save_path)
 
 
 if __name__ == '__main__':
