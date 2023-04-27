@@ -53,7 +53,7 @@ def main():
 
     # print fort22
     if not args.quiet:
-        print(str(bt))
+        print(bt.fort_22())
 
     # show cheap plot
     if args.plot_track:
