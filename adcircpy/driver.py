@@ -17,7 +17,7 @@ from adcircpy.forcing.winds.best_track import BestTrackForcing
 from adcircpy.fort15 import Fort15, StationType
 from adcircpy.mesh import AdcircMesh
 from adcircpy.outputs.collection import OutputCollection
-from adcircpy.server import SlurmConfig, SSHConfig
+from adcircpy.server import BatchConfig, SlurmConfig, SSHConfig
 from adcircpy.server.driver_file import DriverFile
 
 
@@ -29,7 +29,7 @@ class AdcircRun(Fort15):
         end_date: datetime = None,
         spinup_time: timedelta = None,
         netcdf: bool = True,
-        server_config: Union[int, SSHConfig, SlurmConfig] = None,
+        server_config: Union[int, BatchConfig, SSHConfig, SlurmConfig] = None,
     ):
         super().__init__(mesh)
         self._start_date = start_date
@@ -405,7 +405,7 @@ class AdcircRun(Fort15):
                 super().write('hotstart', output_directory / hotstart, overwrite)
 
         if driver is not None:
-            if isinstance(self._server_config, SlurmConfig):
+            if isinstance(self._server_config, SlurmConfig) or isinstance(self._server_config, BatchConfig):
                 driver = self._server_config._filename
             script = DriverFile(self, nproc)
             script.write(output_directory / driver, overwrite)
@@ -911,8 +911,8 @@ class AdcircRun(Fort15):
     def _server_config(self, server_config):
         if server_config is None:
             server_config = self._get_nproc(-1)
-        msg = 'server_config must be int, SSHConfig or SlurmConfig'
-        assert isinstance(server_config, (int, SSHConfig, SlurmConfig)), msg
+        msg = 'server_config must be int, SSHConfig, BatchConfig, or SlurmConfig'
+        assert isinstance(server_config, (int, SSHConfig, BatchConfig, SlurmConfig)), msg
         self.__server_config = server_config
 
     @property
