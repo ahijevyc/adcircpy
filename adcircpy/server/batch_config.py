@@ -13,8 +13,8 @@ class BatchConfig(BaseServerConfig):
         self,
         account: str,
         ntasks: int,
-        mem: str,
         walltime: timedelta,
+        memory: str = None,
         queue : str = None,
         filename: str = 'slurm.job',
         run_name: str = None,
@@ -30,7 +30,7 @@ class BatchConfig(BaseServerConfig):
 
         :param account: charge account 
         :param ntasks: number of total tasks to run
-        :param mem: memory
+        :param memory: memory
         :param run_name: job run name
         :param mail_user: email address
         :param queue : queue to run on
@@ -44,7 +44,7 @@ class BatchConfig(BaseServerConfig):
         """
         self._account = account
         self._ntasks = ntasks
-        self._mem = mem
+        self._memory = memory
         self._run_name = run_name
         self._mail_user = mail_user
         self._queue = queue 
@@ -99,7 +99,7 @@ class BatchConfig(BaseServerConfig):
             f += f'#PBS -A {self._account}\n'
 
         if self._nodes is not None:
-            f += f'#PBS -l select={self._nodes}:ncpus={self._ntasks}:mem={self._mem}:mpiprocs={self._ntasks}\n'
+            f += f'#PBS -l select={self._nodes}:ncpus={self._ntasks}:mpiprocs={self._ntasks}\n'
 
         f += f'#PBS -j oe\n'
         f += f'#PBS -k eod\n'
