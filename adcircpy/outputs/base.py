@@ -5,7 +5,7 @@ import pathlib
 from matplotlib.animation import FuncAnimation
 import matplotlib.pyplot as plt
 from matplotlib.tri import Triangulation
-from netCDF4 import Dataset
+from netCDF4 import Dataset, num2date
 import numpy as np
 from pyproj import CRS
 
@@ -55,6 +55,7 @@ class SurfaceOutput(metaclass=abc.ABCMeta):
             vmin=kwargs.get('vmin', np.min(self.values)),
             vmax=kwargs.get('vmax', np.max(self.values)),
         )
+        plt.gca().set_title(self.time[self.index].strftime('%b %d, %Y %H:%M'))
         self.triangulation.set_mask(None)
         if kwargs.get('cbar') is not None:
             plt.colorbar(_ax)
@@ -74,6 +75,13 @@ class SurfaceOutput(metaclass=abc.ABCMeta):
     def y(self):
         if isinstance(self._ptr, Dataset):
             return self._ptr['y'][:].data
+        else:
+            raise NotImplementedError('ascii')
+
+    @property
+    def time(self):
+        if isinstance(self._ptr, Dataset):
+            return num2date(self._ptr['time'][:], self._ptr['time'].units)
         else:
             raise NotImplementedError('ascii')
 
@@ -258,11 +266,11 @@ class ScalarSurfaceOutputTimeseries(SurfaceOutputTimeseries):
             )
             ax.set_ylim(ymin=kwargs.get('ymin'), ymax=kwargs.get('ymax'), auto=True)
             ax.set_xlim(xmin=kwargs.get('xmin'), xmax=kwargs.get('xmax'), auto=True)
-            # ax.set_title(dates[i].strftime('%b %d, %Y %H:%M'))
+            ax.set_title(self.time[i].strftime('%b %d, %Y %H:%M'))
             ax.set_xlabel('Longitude (°E)')
             ax.set_ylabel('Latitude (°N)')
-            # cbar = fig.colorbar(_ax, cax=cax, format='%.1f')
-            # cbar.ax.set_ylabel('UNITS', rotation=90)
+            cbar = fig.colorbar(_ax, cax=cax, format='%.1f')
+            cbar.ax.set_ylabel(self._ptr.variables[self._physical_variable].units, rotation=90)
 
         end_frame = end_frame % len(self) if end_frame < 0 else end_frame
         start_frame = start_frame % len(self) if start_frame < 0 else start_frame
