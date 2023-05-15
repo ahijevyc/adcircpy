@@ -1,13 +1,15 @@
 from abc import ABC, abstractmethod
+from datetime import timedelta
 from os import PathLike
 
 from adcircpy.forcing.base import Forcing
 
 
 class WindForcing(Forcing, ABC):
-    def __init__(self, nws: int, interval_seconds: int):
+    def __init__(self, nws: int, interval_seconds: int, spinup_time: timedelta):
         super().__init__(interval_seconds)
         self.NWS = nws
+        self.spinup_time = spinup_time
 
     @abstractmethod
     def write(self, directory: PathLike, overwrite: bool = False):

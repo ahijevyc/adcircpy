@@ -1,7 +1,7 @@
 import os
 from os import PathLike
 from pathlib import Path
-
+import pdb
 import appdirs
 from netCDF4 import Dataset
 import numpy as np
@@ -10,7 +10,7 @@ from scipy.interpolate import griddata
 from adcircpy.forcing.tides.dataset import TidalDataset
 
 TPXO_ENVIRONMENT_VARIABLE = 'TPXO_NCFILE'
-TPXO_FILENAME = 'h_tpxo9.v1.nc'
+TPXO_FILENAME = 'h_tpxo9.v2.nc'
 
 
 class TPXO(TidalDataset):
@@ -18,11 +18,7 @@ class TPXO(TidalDataset):
 
     def __init__(self, tpxo_dataset_filename: PathLike = None):
         if tpxo_dataset_filename is None:
-            tpxo_environment_variable = os.getenv(TPXO_ENVIRONMENT_VARIABLE)
-            if tpxo_environment_variable is not None:
-                tpxo_dataset_filename = tpxo_environment_variable
-            else:
-                tpxo_dataset_filename = self.DEFAULT_PATH
+            tpxo_dataset_filename = os.getenv(TPXO_ENVIRONMENT_VARIABLE, self.DEFAULT_PATH)
 
         super().__init__(tpxo_dataset_filename)
 
@@ -36,7 +32,7 @@ class TPXO(TidalDataset):
                         'New users will need to register and request a copy of '
                         f'the TPXO9 NetCDF file (specifically `{TPXO_FILENAME}`) '
                         'from the authors at https://www.tpxo.net.',
-                        'Once you obtain `h_tpxo9.v1.nc`, you can follow one of the following options: ',
+                        'Once you obtain `{TPXO_FILENAME}`, you can follow one of the following options: ',
                         f'1) copy or symlink the file to "{self.path}"',
                         f'2) set the environment variable `{TPXO_ENVIRONMENT_VARIABLE}` to point to the file',
                     ]

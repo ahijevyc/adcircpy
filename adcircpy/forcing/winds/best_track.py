@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import io
 import logging
 import os
@@ -26,9 +26,10 @@ class BestTrackForcing(VortexTrack, WindForcing):
         self,
         storm: Union[str, PathLike, DataFrame, io.BytesIO],
         nws: int = None,
-        interval_seconds: int = None,
+        interval_seconds: int = 3600,
         start_date: datetime = None,
         end_date: datetime = None,
+        spinup_time: timedelta = timedelta(hours=0),
     ):
         if nws is None:
             nws = 20
@@ -38,8 +39,6 @@ class BestTrackForcing(VortexTrack, WindForcing):
             nws in valid_nws_values
         ), f'ATCF BestTrack can only use `nws` values in {valid_nws_values}'
 
-        if interval_seconds is None:
-            interval_seconds = 3600
 
         VortexTrack.__init__(
             self,
@@ -49,7 +48,8 @@ class BestTrackForcing(VortexTrack, WindForcing):
             file_deck='b',
             advisories=['BEST'],
         )
-        WindForcing.__init__(self, nws=nws, interval_seconds=interval_seconds)
+        WindForcing.__init__(self, nws=nws, interval_seconds=interval_seconds, spinup_time=spinup_time)
+        self.spinup_time = spinup_time
 
     @classmethod
     def from_fort22(
