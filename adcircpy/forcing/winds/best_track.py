@@ -48,7 +48,7 @@ class BestTrackForcing(VortexTrack, WindForcing):
             file_deck='b',
             advisories=['BEST'],
         )
-        WindForcing.__init__(self, nws=nws, interval_seconds=interval_seconds, spinup_time=spinup_time)
+        WindForcing.__init__(self, nws=nws, interval_seconds=interval_seconds)
         self.spinup_time = spinup_time
 
     @classmethod
@@ -107,6 +107,19 @@ class BestTrackForcing(VortexTrack, WindForcing):
             data["advisory"] = " ASYM"
         logging.info(f"save {path}")
         data.to_csv(path, index=False, header=False)
+
+    @property
+    def spinup_time(self) -> timedelta:
+        try:
+            return self._spinup_time
+        except AttributeError:
+            return timedelta(days=0)
+
+    @spinup_time.setter
+    def spinup_time(self, value: timedelta):
+        if not isinstance(value, timedelta):
+            raise TypeError("spinup_time must be a timedelta")
+        self._spinup_time = value
 
     @property
     def NWS(self) -> int:
