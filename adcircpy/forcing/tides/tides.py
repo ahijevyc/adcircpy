@@ -359,7 +359,7 @@ class Tides(bctypes.EtaBc):
             277.0256206
             + 129.38482032 * self.DYR
             + 13.176396768 * self.DDAY
-            + 0.549016532 * self.forcing_start_date.hour
+            + 0.549016532 * self.start_date.hour
         )
 
     def get_solar_perigee(self) -> float:
@@ -513,10 +513,6 @@ class Tides(bctypes.EtaBc):
             pass
 
     @property
-    def forcing_start_date(self) -> datetime:
-        return self.start_date - self.spinup_time
-
-    @property
     def spinup_time(self) -> timedelta:
         try:
             return self.__spinup_time
@@ -545,13 +541,15 @@ class Tides(bctypes.EtaBc):
 
     @property
     def major_constituents(self) -> [str]:
-        return ['Q1', 'O1', 'P1', 'K1', 'N2', 'M2', 'S2', 'K2']
+        #return ['Q1', 'O1', 'P1', 'K1', 'N2', 'M2', 'S2', 'K2']
+        return ['K1', 'O1', 'P1', 'Q1', 'N2', 'M2', 'S2', 'K2']
 
     @property
     def constituents(self) -> [str]:
         constituents = self.major_constituents
         if self.tidal_source == TidalSource.TPXO:
-            constituents.extend(['Mm', 'Mf', 'M4', 'MN4', 'MS4', '2N2', 'S1'])
+            #constituents.extend(['Mm', 'Mf', 'M4', 'MN4', 'MS4', '2N2', 'S1'])
+            constituents.extend(['Mf', 'Mm', 'M4', 'MS4', 'MN4', '2N2', 'S1'])
         return constituents
 
     @property
@@ -628,8 +626,8 @@ class Tides(bctypes.EtaBc):
 
     @property
     def hour_middle(self) -> float:
-        return self.forcing_start_date.hour + (
-            (self.end_date - self.forcing_start_date) / timedelta(hours=1) / 2
+        return self.start_date.hour + (
+            (self.end_date - self.start_date) / timedelta(hours=1) / 2
         )
 
     @property
@@ -646,13 +644,13 @@ class Tides(bctypes.EtaBc):
 
     @property
     def DYR(self) -> float:
-        return self.forcing_start_date.year - 1900.0
+        return self.start_date.year - 1900.0
 
     @property
     def DDAY(self) -> float:
         return (
-            self.forcing_start_date.timetuple().tm_yday
-            + int((self.forcing_start_date.year - 1901.0) / 4.0)
+            self.start_date.timetuple().tm_yday
+            + int((self.start_date.year - 1901.0) / 4.0)
             - 1
         )
 

@@ -1,3 +1,5 @@
+from functools import lru_cache
+import pdb
 from datetime import datetime, timedelta
 from enum import Enum
 import logging
@@ -297,6 +299,7 @@ class Fort15:
         )
         # ----------------
         # tidal forcings
+        logging.info("fort15 tidal forcings")
         # ----------------
         f.append(self.get_tidal_forcing())
         f.append(fort15_line(f'{self.ANGINN:G}', 'ANGINN', 'INNER ANGLE THRESHOLD'))
@@ -331,7 +334,7 @@ class Fort15:
         #         raise NotImplementedError(f'bctides generation not implemented'
         #                                   f' for "itrtype={bnd["itrtype"]}"')
         # ----------------
-        # output requests
+        logging.info("fort15 output requests")
         # ----------------
         # elevation out stations
         f.extend(
@@ -520,7 +523,7 @@ class Fort15:
             ]
         )
         # ----------------
-        # hostart file generation
+        logging.debug("specify file generation and interval")
         # ----------------
         f.extend(
             [
@@ -573,18 +576,21 @@ class Fort15:
         else:
             logging.debug(f'skipping existing file "{path}"')
 
+    @lru_cache()
     def get_tidal_forcing(self) -> str:
         f = []
         f.append(
             fort15_line(
                 f'{self.NTIF:d}',
                 'NTIF',
-                'NUMBER OF TIDAL POTENTIAL CONSTITUENTS BEING FORCED starting 2008082300',
+                f'NUMBER OF TIDAL POTENTIAL CONSTITUENTS BEING FORCED starting {self.start_date}',
             )
         )
         if self.NTIF > 0:
             active = self.mesh.forcings.tides.get_active_potential_constituents()
+            logging.info(f"{len(active)} potential constituents")
             for constituent in active:
+                logging.debug(constituent)
                 forcing = self.mesh.forcings.tides(constituent)
                 f.extend(
                     [
@@ -597,7 +603,9 @@ class Fort15:
         f.append(fort15_line(f'{self.NBFR:d}'))
         if self.NBFR > 0:
             active = self.mesh.forcings.tides.get_active_forcing_constituents()
+            logging.info(f"{len(active)} forcing constituents")
             for constituent in active:
+                logging.debug(constituent)
                 forcing = self.mesh.forcings.tides(constituent)
                 f.extend(
                     [
@@ -606,8 +614,12 @@ class Fort15:
                         # f'{len(self.mesh.open_boundaries)}',
                     ]
                 )
+            oceanbounds = self.mesh.boundaries.ocean.gdf
             for index, row in self.mesh.boundaries.ocean.gdf.iterrows():
-                for constituent in self.mesh.forcings.tides.get_active_constituents():
+                active = self.mesh.forcings.tides.get_active_constituents()
+                logging.info(f"ocean boundary {index+1}/{len(oceanbounds)}: {len(active)} constituents")
+                for constituent in active:
+                    logging.debug(constituent)
                     f.append(fort15_line(constituent))
                     vertices = self.mesh.get_xy(crs='EPSG:4326').iloc[row.indexes, :].values
                     amp, phase = self.mesh.forcings.tides.tidal_dataset(constituent, vertices)
@@ -631,19 +643,17 @@ class Fort15:
                 'SWAN_OutputTM02': 'False',
                 'SWAN_OutputTMM10': 'False',
             }
-        namelists['metControl'] = {
-            'WindDragLimit': 2.5e-03,
-            'DragLawString': 'default',
-            'outputWindDrag': 'F',
-            'invertedBarometerOnElevationBoundary': 'T',
-        }
+        try:
+            namelists['metControl'] = self.metControl
+        except:
+            pass
         return namelists
 
     def set_time_weighting_factors_in_gwce(self, A00: float, B00: float, C00: float):
         A00 = float(A00)
         B00 = float(B00)
         C00 = float(C00)
-        assert A00 + B00 + C00 == 1.0, '"A00 + B00 + C00" must equal 1'
+        assert np.isclose(A00 + B00 + C00, 1.0), '"A00 + B00 + C00" must equal 1'
         self.__A00 = A00
         self.__B00 = B00
         self.__C00 = C00
@@ -1188,114 +1198,117 @@ class Fort15:
 
     @property
     def IM(self) -> int:
-        if self.stress_based_3D:
-            IM = 2
+        try:
+            return self._IM
+        except AttributeError:
+            if self.stress_based_3D:
+                IM = 2
 
-        elif self.passive_scalar_transport:
-            if self.vertical_mode == '2D':
-                if not self.baroclinicity:
-                    IM = 10
-                else:
-                    IM = 30
-            else:
-                if not self.baroclinicity:
-                    IM = 11
-                else:
-                    IM = 31
-        else:
-
-            def get_digit_1():
+            elif self.passive_scalar_transport:
                 if self.vertical_mode == '2D':
-                    if self.lateral_stress_in_gwce == 'kolar_grey':
-                        return 1
-                    elif self.lateral_stress_in_gwce == 'flux_based':
-                        if self.lateral_stress_in_gwce_is_symmetrical:
-                            return 4
-                        else:
-                            return 2
-                    elif self.lateral_stress_in_gwce == 'velocity_based':
-                        if self.lateral_stress_in_gwce_is_symmetrical:
-                            return 5
-                        else:
-                            return 3
+                    if not self.baroclinicity:
+                        IM = 10
+                    else:
+                        IM = 30
                 else:
-                    return 6
+                    if not self.baroclinicity:
+                        IM = 11
+                    else:
+                        IM = 31
+            else:
 
-            def get_digit_2():
-                if self.advection_in_gwce == 'non_conservative':
-                    return 1
-                elif self.advection_in_gwce == 'form_1':
-                    return 2
-                elif self.advection_in_gwce == 'form_2':
-                    return 3
-
-            def get_digit_3():
-                if self.lateral_stress_in_momentum == 'velocity_based':
-                    if self.lateral_stress_in_momentum_method == 'integration_by_parts':
-                        if self.lateral_stress_in_momentum_is_symmetrical:
-                            return 3
-                        else:
+                def get_digit_1():
+                    if self.vertical_mode == '2D':
+                        if self.lateral_stress_in_gwce == 'kolar_grey':
                             return 1
+                        elif self.lateral_stress_in_gwce == 'flux_based':
+                            if self.lateral_stress_in_gwce_is_symmetrical:
+                                return 4
+                            else:
+                                return 2
+                        elif self.lateral_stress_in_gwce == 'velocity_based':
+                            if self.lateral_stress_in_gwce_is_symmetrical:
+                                return 5
+                            else:
+                                return 3
                     else:
-                        raise NotImplementedError('not implemented in adcirc')
-                        return 5
-                elif self.lateral_stress_in_momentum == 'flux_based':
-                    if self.lateral_stress_in_momentum_method == 'integration_by_parts':
-                        if self.lateral_stress_in_momentum_is_symmetrical:
-                            return 4
-                        else:
-                            return 2
-                    else:
-                        raise NotImplementedError('not implemented in adcirc')
                         return 6
 
-            def get_digit_4():
-                if self.advection_in_momentum == 'non_conservative':
-                    return 1
-                elif self.advection_in_momentum == 'form_1':
-                    return 2
-                elif self.advection_in_momentum == 'form_2':
-                    return 3
+                def get_digit_2():
+                    if self.advection_in_gwce == 'non_conservative':
+                        return 1
+                    elif self.advection_in_gwce == 'form_1':
+                        return 2
+                    elif self.advection_in_gwce == 'form_2':
+                        return 3
 
-            def get_digit_5():
-                if self.area_integration_in_momentum == 'corrected':
-                    return 1
-                elif self.area_integration_in_momentum == 'original':
-                    return 2
+                def get_digit_3():
+                    if self.lateral_stress_in_momentum == 'velocity_based':
+                        if self.lateral_stress_in_momentum_method == 'integration_by_parts':
+                            if self.lateral_stress_in_momentum_is_symmetrical:
+                                return 3
+                            else:
+                                return 1
+                        else:
+                            raise NotImplementedError('not implemented in adcirc')
+                            return 5
+                    elif self.lateral_stress_in_momentum == 'flux_based':
+                        if self.lateral_stress_in_momentum_method == 'integration_by_parts':
+                            if self.lateral_stress_in_momentum_is_symmetrical:
+                                return 4
+                            else:
+                                return 2
+                        else:
+                            raise NotImplementedError('not implemented in adcirc')
+                            return 6
 
-            def get_digit_6():
-                if (
-                    not self.baroclinicity
-                    and self.gwce_solution_scheme == 'semi-implicit-legacy'
-                ):
-                    return 1
+                def get_digit_4():
+                    if self.advection_in_momentum == 'non_conservative':
+                        return 1
+                    elif self.advection_in_momentum == 'form_1':
+                        return 2
+                    elif self.advection_in_momentum == 'form_2':
+                        return 3
 
-                elif not self.baroclinicity and self.gwce_solution_scheme == 'explicit':
-                    return 2
+                def get_digit_5():
+                    if self.area_integration_in_momentum == 'corrected':
+                        return 1
+                    elif self.area_integration_in_momentum == 'original':
+                        return 2
 
-                elif not self.baroclinicity and self.gwce_solution_scheme == 'semi-implicit':
-                    return 3
+                def get_digit_6():
+                    if (
+                        not self.baroclinicity
+                        and self.gwce_solution_scheme == 'semi-implicit-legacy'
+                    ):
+                        return 1
 
-                else:
-                    raise Exception(
-                        f'No IM digit 6 for {self.baroclinicity}, '
-                        f'{self.gwce_solution_scheme}'
-                    )
+                    elif not self.baroclinicity and self.gwce_solution_scheme == 'explicit':
+                        return 2
 
-                # elif (self.baroclinicity and
-                #       self.gwce_solution_scheme == 'semi-implicit'):
-                #     return 3
-                # elif (self.baroclinicity and
-                #       self.gwce_solution_scheme == 'explicit'):
-                #     return 4
+                    elif not self.baroclinicity and self.gwce_solution_scheme == 'semi-implicit':
+                        return 3
 
-            IM = '{:d}'.format(get_digit_1())
-            IM += '{:d}'.format(get_digit_2())
-            IM += '{:d}'.format(get_digit_3())
-            IM += '{:d}'.format(get_digit_4())
-            IM += '{:d}'.format(get_digit_5())
-            IM += '{:d}'.format(get_digit_6())
-        return int(IM)
+                    else:
+                        raise Exception(
+                            f'No IM digit 6 for {self.baroclinicity}, '
+                            f'{self.gwce_solution_scheme}'
+                        )
+
+                    # elif (self.baroclinicity and
+                    #       self.gwce_solution_scheme == 'semi-implicit'):
+                    #     return 3
+                    # elif (self.baroclinicity and
+                    #       self.gwce_solution_scheme == 'explicit'):
+                    #     return 4
+
+                IM = '{:d}'.format(get_digit_1())
+                IM += '{:d}'.format(get_digit_2())
+                IM += '{:d}'.format(get_digit_3())
+                IM += '{:d}'.format(get_digit_4())
+                IM += '{:d}'.format(get_digit_5())
+                IM += '{:d}'.format(get_digit_6())
+            return int(IM)
 
     @property
     def IDEN(self) -> str:
@@ -1382,8 +1395,6 @@ class Fort15:
 
     @property
     def NRAMP(self) -> int:
-        if self.spinup_time == timedelta(seconds=0):
-            return 1
         if self._runtype == 'coldstart':
             return 1
         else:
@@ -1524,15 +1535,7 @@ class Fort15:
         try:
             return self.__STATIM
         except AttributeError:
-            if self._runtype == 'coldstart':
-                return 0
-            else:
-                # Looks like this has always to be zero!
-                # the following makes adcirc crash with not enough time
-                # in meteorological inputs.
-                # return (self.start_date - self.forcing_start_date) / timedelta(
-                #     days=1)
-                return 0
+            return 0
 
     @STATIM.setter
     def STATIM(self, STATIM):
@@ -1553,7 +1556,7 @@ class Fort15:
     def WTIMINC(self) -> Union[int, str]:
         if self.NWS in [8, 19, 20]:
             return (
-                f'{self.forcing_start_date:%Y %m %d %H} '
+                f'{self.tidal_forcing.start_date:%Y %m %d %H} '
                 f'{self.wind_forcing.data["storm_number"].iloc[0]} '
                 f'{self.wind_forcing.BLADj} '
                 f'{self.wind_forcing.geofactor}'
@@ -1576,36 +1579,27 @@ class Fort15:
     @property
     def RNDAY(self) -> int:
         if self._runtype == 'coldstart':
-            if self.spinup_time > timedelta(seconds=0):
-                RNDAY = self.start_date - self.forcing_start_date
-            else:
-                RNDAY = self.end_date - self.start_date
+            RNDAY = self.start_date - self.tidal_forcing.start_date
         else:
-            RNDAY = self.end_date - self.forcing_start_date
+            RNDAY = self.end_date - self.tidal_forcing.start_date
         return RNDAY / timedelta(days=1)
 
     @property
     def DRAMP(self) -> str:
-        try:
-            DRAMP = '{:<.16G}'.format(self.__DRAMP)
+        DRAMP = self.tidal_forcing.spinup_time / timedelta(days=1)
+        if self.NRAMP in [0, 1]:
+            DRAMP = '{:<.16G}'.format(DRAMP)
             DRAMP += 10 * ' '
-        except AttributeError:
-            DRAMP = self.spinup_factor * (
-                (self.start_date - self.forcing_start_date) / timedelta(days=1)
-            )
-            if self.NRAMP in [0, 1]:
-                DRAMP = '{:<.16G}'.format(DRAMP)
-                DRAMP += 10 * ' '
-            else:
-                DRAMP = '{:<.3f} '.format(DRAMP)
-                DRAMP += '{:<.3f} '.format(self.DRAMPExtFlux)
-                DRAMP += '{:<.3f} '.format(self.FluxSettlingTime)
-                DRAMP += '{:<.3f} '.format(self.DRAMPIntFlux)
-                DRAMP += '{:<.3f} '.format(self.DRAMPElev)
-                DRAMP += '{:<.3f} '.format(self.DRAMPTip)
-                DRAMP += '{:<.3f} '.format(self.DRAMPMete)
-                DRAMP += '{:<.3f} '.format(self.DRAMPWRad)
-                DRAMP += '{:<.3f} '.format(self.DUnRampMete)
+        else:
+            DRAMP = '{:<.3f} '.format(DRAMP)
+            DRAMP += '{:<.3f} '.format(self.DRAMPExtFlux)
+            DRAMP += '{:<.3f} '.format(self.FluxSettlingTime)
+            DRAMP += '{:<.3f} '.format(self.DRAMPIntFlux)
+            DRAMP += '{:<.3f} '.format(self.DRAMPElev)
+            DRAMP += '{:<.3f} '.format(self.DRAMPTip)
+            DRAMP += '{:<.3f} '.format(self.DRAMPMete)
+            DRAMP += '{:<.3f} '.format(self.DRAMPWRad)
+            DRAMP += '{:<.3f} '.format(self.DUnRampMete)
         return DRAMP
 
     @DRAMP.setter
@@ -1650,9 +1644,8 @@ class Fort15:
         try:
             return self.__DRAMPElev
         except AttributeError:
-            return self.spinup_factor * (
-                (self.start_date - self.forcing_start_date) / timedelta(days=1)
-            )
+            return self.tidal_forcing.spinup_time / timedelta(days=1)
+            
 
     @DRAMPElev.setter
     def DRAMPElev(self, DRAMPElev: float):
@@ -1663,9 +1656,7 @@ class Fort15:
         try:
             return self.__DRAMPTip
         except AttributeError:
-            return self.spinup_factor * (
-                (self.start_date - self.forcing_start_date) / timedelta(days=1)
-            )
+            return self.tidal_forcing.spinup_time / timedelta(days=1)
 
     @DRAMPTip.setter
     def DRAMPTip(self, DRAMPTip: float):
@@ -1676,7 +1667,7 @@ class Fort15:
         try:
             return self.__DRAMPMete
         except AttributeError:
-            return 1.0
+            return self.wind_forcing.spinup_time / timedelta(days=1)
 
     @DRAMPMete.setter
     def DRAMPMete(self, DRAMPMete: float):
@@ -1698,13 +1689,12 @@ class Fort15:
         try:
             return self.__DUnRampMete
         except AttributeError:
-            dt = self.start_date - self.forcing_start_date
-            return (timedelta(days=self.STATIM) + dt) / timedelta(days=1)
+            return 0.0
 
     @DUnRampMete.setter
     def DUnRampMete(self, DUnRampMete: float):
         if DUnRampMete is None:
-            DUnRampMete = self.DRAMP
+            DUnRampMete = (self.wind_forcing.start_date - self.tidal_forcing.start_date) / timedelta(days=1)
         self.__DUnRampMete = float(DUnRampMete)
 
     @property
@@ -2258,15 +2248,9 @@ class Fort15:
 
     @property
     def NFREQ(self) -> int:
-        if self._runtype == 'coldstart':
-            if np.any([_['spinup'] for _ in self._outputs]):
-                if np.any([_['sampling_rate'] for _ in self._outputs]):
-                    if np.any([_['harmonic_analysis'] for _ in self._outputs]):
-                        return len(self.mesh.forcings.tides.get_active_constituents())
-        else:
-            if np.any([_['sampling_rate'] for _ in self._outputs]):
-                if np.any([_['harmonic_analysis'] for _ in self._outputs]):
-                    return len(self.mesh.forcings.tides.get_active_constituents())
+        if np.any([_['sampling_rate'] for _ in self._outputs]):
+            if np.any([_['harmonic_analysis'] for _ in self._outputs]):
+                return len(self.mesh.forcings.tides.get_active_constituents())
         return 0
 
     @property
@@ -2279,8 +2263,7 @@ class Fort15:
                     if self._runtype == 'coldstart':
                         return self.STATIM + float(self.DRAMP)
                     else:
-                        dt = self.start_date - self.forcing_start_date
-                        return (timedelta(days=self.STATIM) + dt) / timedelta(days=1)
+                        return timedelta(days=self.STATIM) / timedelta(days=1)
                 except TypeError:
                     #  if self.DRAMP is not castable to float()
                     raise
@@ -2300,14 +2283,11 @@ class Fort15:
         except AttributeError:
             if self.NFREQ == 0:
                 return 0
-            dt = self.start_date - self.forcing_start_date
             if self._runtype == 'coldstart':
-                if dt == timedelta(seconds=0):
-                    dt = self.end_date - self.start_date
+                dt = self.end_date - self.start_date
                 return dt / timedelta(days=1)
             else:
-                dt = self.start_date - self.forcing_start_date
-                return (timedelta(days=self.STATIM) + dt) / timedelta(days=1)
+                return timedelta(days=self.STATIM) / timedelta(days=1)
 
     @THAF.setter
     def THAF(self, THAF: float):
@@ -2323,13 +2303,8 @@ class Fort15:
             NHAINC = float('inf')
             for _output in self._outputs:
                 if _output['harmonic_analysis']:
-                    if self._runtype == 'coldstart':
-                        if _output['spinup']:
-                            fs = _output['sampling_rate']
-                            NHAINC = np.min([NHAINC, fs / timedelta(seconds=1)])
-                    else:  # consider a "metonly" run?
-                        fs = _output['sampling_rate']
-                        NHAINC = np.min([NHAINC, fs / timedelta(seconds=1)])
+                    fs = _output['sampling_rate']
+                    NHAINC = np.min([NHAINC, fs / timedelta(seconds=1)])
             if NHAINC == float('inf'):
                 NHAINC = 0
             return int(NHAINC / self.DTDP)
@@ -2386,13 +2361,8 @@ class Fort15:
         try:
             return self.__NHSTAR
         except AttributeError:
-            if self.forcing_start_date == self.start_date:
-                return 0
             if self._runtype == 'coldstart':
-                if self.netcdf is True:
-                    return 5
-                else:
-                    return 3
+                return 5
             else:
                 return 0
 
@@ -2409,9 +2379,7 @@ class Fort15:
             if self.NHSTAR == 0:
                 return 0
             else:
-                dt = self.start_date - self.forcing_start_date
-                if dt == timedelta(seconds=0):
-                    dt = self.end_date - self.forcing_start_date
+                dt = self.wind_forcing.start_date - self.tidal_forcing.start_date
                 return int(dt / timedelta(seconds=1) / np.around(self.DTDP, 6))
 
     @NHSINC.setter
@@ -2569,7 +2537,7 @@ class Fort15:
 
     @property
     def NCDATE(self) -> str:
-        return f'{self.forcing_start_date:%Y-%m-%d %H:%M}'
+        return f'{self.tidal_forcing.start_date:%Y-%m-%d %H:%M}'
 
     @property
     def FortranNamelists(self) -> str:
@@ -2577,140 +2545,59 @@ class Fort15:
 
     def _get_NSTA_(self, physical_var: str):
         stations = self._container['stations'][physical_var]
-        if self._runtype == 'coldstart':
-            if stations['spinup'] is not None:
-                return len(stations['collection'].keys())
-            else:
-                return 0
+        if np.abs(self._get_NOUT__('stations', physical_var)) > 0:
+            return len(stations['collection'].keys())
         else:
-            if np.abs(self._get_NOUT__('stations', physical_var)) > 0:
-                return len(stations['collection'].keys())
-            else:
-                return 0
+            return 0
 
     def _get_NOUT__(self, output_type, physical_var: str):
         output = self._container[output_type][physical_var]
-        if self._runtype == 'coldstart':
-            if output['spinup'] is not None:
-                if output['netcdf'] is True:
-                    return -5
-                else:
-                    return -1
+        if output['sampling_rate'] is not None:
+            if output['netcdf'] is True:
+                return -5
             else:
-                return 0
-
-        elif self._runtype == 'hotstart':
-            if output['sampling_rate'] is not None:
-                if output['netcdf'] is True:
-                    return -5
-                else:
-                    return -1
-            else:
-                return 0
+                return -1
+        else:
+            return 0
 
     def _get_TOUTS__(self, output_type: str, physical_var: str) -> int:
-        output = self._container[output_type][physical_var]
-        if self._runtype == 'coldstart':
-            # coldstart
-            if output['spinup'] is not None:
-                start = output['spinup_start']
-            else:
-                start = self.start_date
-        elif output['sampling_rate'] is not None:
-            # hotstart
-            start = output['start']
+        if self._runtype == "coldstart":
+            return 0
         else:
-            start = self.start_date
-
-        # typecast
-        if isinstance(start, int):  # int interpreted as literal timestep
-            start = timedelta(seconds=(start * self.timestep))
-            if self._runtype == 'coldstart':
-                start -= self.forcing_start_date
-            else:
-                start -= self.start_date
-        elif isinstance(start, datetime):
-            start -= self.start_date
-        elif isinstance(start, type(None)):
-            if self._runtype == 'hotstart':
-                start = self.start_date - self.forcing_start_date
-            else:
-                start = timedelta(seconds=0)
-
-        if start < timedelta(0):
-            start = timedelta(seconds=abs(start / timedelta(seconds=1)))
-
-        return start / timedelta(days=1)
+            return (self.wind_forcing.start_date - self.tidal_forcing.start_date) / timedelta(days=1)
 
     def _get_TOUTF__(self, output_type: str, physical_var: str):
         output = self._container[output_type][physical_var]
-        if self._runtype == 'coldstart':
-            # coldstart
-            if output['spinup'] is not None:
-                if output['spinup_end'] is None or output['spinup_end'] == output['start']:
-                    if self.NOUTGE != 0:
-                        time = output['spinup_end'] - self.start_date
-                    else:
-                        time = timedelta(seconds=0)
-                else:
-                    raise NotImplementedError('specific spinup end time is not implemented')
+        if output['sampling_rate'] is not None:
+            if self._runtype == "coldstart":
+                time = self.wind_forcing.start_date - self.tidal_forcing.start_date
             else:
-                time = timedelta(seconds=0)
-        elif self._runtype == 'hotstart':
-            # hotstart
-            if output['sampling_rate'] is not None:
-                if output['end'] is None or output['end'] == self.end_date:
-                    if self._runtype == 'hotstart':
-                        time = self.end_date - self.forcing_start_date
-                    # if self.NOUTGE != 0:
-                    #     time = self.spinup_time
-                    #     if time <= 0:
-                    #         time = self.end_date - self.forcing_start_date
-                    else:
-                        time = self.start_date - self.forcing_start_date
-                else:
-                    raise NotImplementedError('specific model end time is not implemented')
-            else:
-                time = timedelta(seconds=0)
-
-        if time < timedelta(0):
-            time = timedelta(seconds=abs(time / timedelta(seconds=1)))
+                time = self.end_date - self.tidal_forcing.start_date
+        else:
+            time = timedelta(seconds=0)
 
         return time / timedelta(days=1)
 
     def _get_NSPOOL__(self, output_type: str, physical_var: str) -> int:
         output = self._container[output_type][physical_var]
-        if self._runtype == 'coldstart':
-            if output['spinup']:
-                return int(round(output['spinup'] / timedelta(seconds=1) / self.DTDP))
-            else:
-                return 0
+        if output['sampling_rate'] is not None:
+            if output_type == 'surface' and output['sampling_rate'] == timedelta(
+                seconds=0
+            ):
+                return int(
+                    (self.end_date - self.start_date) / timedelta(seconds=1) / self.DTDP
+                )
+            return int(round((output['sampling_rate'] / timedelta(seconds=1) / self.DTDP)))
         else:
-            if output['sampling_rate'] is not None:
-                if output_type == 'surface' and output['sampling_rate'] == timedelta(
-                    seconds=0
-                ):
-                    return int(
-                        (self.end_date - self.start_date) / timedelta(seconds=1) / self.DTDP
-                    )
-                return int(round((output['sampling_rate'] / timedelta(seconds=1) / self.DTDP)))
-            else:
-                return 0
+            return 0
 
     def _get_harmonic_analysis_state(self, output: {str: Any}):
         state = 0
-        if self._runtype == 'coldstart':
-            if output['spinup'] and output['harmonic_analysis']:
-                if self.netcdf:
-                    return 5
-                else:
-                    return 1
-        else:
-            if output['harmonic_analysis']:
-                if self.netcdf:
-                    return 5
-                else:
-                    return 1
+        if output['harmonic_analysis']:
+            if self.netcdf:
+                return 5
+            else:
+                return 1
         return state
 
 

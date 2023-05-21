@@ -10,7 +10,7 @@ from matplotlib import pyplot
 from matplotlib.axis import Axis
 from matplotlib.transforms import Bbox
 import numpy as numpy
-from pandas import DataFrame
+from pandas import DataFrame, to_datetime
 from pyproj import CRS, Transformer
 from shapely import ops
 from shapely.geometry import Point, Polygon
@@ -96,7 +96,17 @@ class BestTrackForcing(VortexTrack, WindForcing):
         return summary
 
     def write(self, path: PathLike, overwrite: bool = False):
-        VortexTrack.to_file(self, path=path, overwrite=overwrite)
+        #VortexTrack.to_file(self, path=path, overwrite=overwrite)
+        data = self.fort_22()
+        if data.advisory.str.strip().eq("BEST").all():
+            logging.warning("make BEST readable by aswip")
+            dt = to_datetime(data["datetime"], format=" %Y%m%d%H")
+            itime = dt.min()
+            data["forecast_hours"] = ((dt - itime).dt.total_seconds() / 3600).astype(int).astype(str).str.pad(4)
+            data["datetime"] = itime.strftime(" %Y%m%d%H")
+            data["advisory"] = " ASYM"
+        logging.info(f"save {path}")
+        data.to_csv(path, index=False, header=False)
 
     @property
     def NWS(self) -> int:

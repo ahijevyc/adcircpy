@@ -35,6 +35,8 @@ def animation(fort63, args):
         xmax=args.xmax,
         ymin=args.ymin,
         ymax=args.ymax,
+        vmin=args.vmin,
+        vmax=args.vmax,
         start_frame=args.start_index,
         end_frame=args.end_index,
         fps=args.fps,
@@ -98,6 +100,8 @@ def parse_args():
     anim.add_argument('--xmax', type=float)
     anim.add_argument('--ymin', type=float)
     anim.add_argument('--ymax', type=float)
+    anim.add_argument('--vmin', type=float)
+    anim.add_argument('--vmax', type=float)
 
     # export
     export = subparsers.add_parser('export')

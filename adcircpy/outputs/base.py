@@ -1,3 +1,5 @@
+import logging
+import pdb
 import abc
 from functools import lru_cache
 import pathlib
@@ -258,11 +260,16 @@ class ScalarSurfaceOutputTimeseries(SurfaceOutputTimeseries):
             if kwargs.get('elements', False):
                 ax.triplot(self.triangulation, color='k', linewidth=0.7)
 
+            vmin=kwargs.get('vmin')
+            vmax=kwargs.get('vmax')
+            logging.info(f"vmin={vmin} vmax={vmax}")
             _ax = ax.tricontourf(
                 self.triangulation,
                 self.values,
                 cmap=kwargs.get('cmap', self._cmap),
                 levels=kwargs.get('levels', self._levels),
+                vmin=vmin,
+                vmax=vmax,
             )
             ax.set_ylim(ymin=kwargs.get('ymin'), ymax=kwargs.get('ymax'), auto=True)
             ax.set_xlim(xmin=kwargs.get('xmin'), xmax=kwargs.get('xmax'), auto=True)

@@ -23,6 +23,7 @@ class NodalAttributes:
 
         for name in self.get_attribute_names():
             attribute = self.get_attribute(name)
+            logging.info(f"{attribute} default indexes")
             fort13.extend(
                 [
                     f'{name}',
@@ -34,6 +35,7 @@ class NodalAttributes:
         for name in self.get_attribute_names():
             attribute = self.get_attribute(name)
             fort13.extend([f'{name}', f'{len(attribute["non_default_indexes"])}'])
+            logging.info(f"{attribute} non-default indexes")
             for i, values in enumerate(
                 attribute['values'][attribute['non_default_indexes'], :]
             ):
@@ -141,7 +143,7 @@ class NodalAttributes:
             )
         assert isinstance(coldstart, bool)
         assert isinstance(hotstart, bool)
-        assert values.flatten().shape[0] % self._fort14.values.shape[0] == 0
+        assert values.size % self._fort14.values.shape[0] == 0
         self._attributes[name].update(
             {'values': values, 'coldstart': coldstart, 'hotstart': hotstart}
         )

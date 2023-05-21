@@ -1,5 +1,7 @@
+import pdb
 from datetime import datetime, timedelta
 from functools import lru_cache
+import logging
 import os
 import pathlib
 import shutil
@@ -64,9 +66,6 @@ class AdcircRun(Fort15):
         sampling_rate: timedelta,
         start: datetime = None,
         end: datetime = None,
-        spinup: Union[timedelta, int] = None,
-        spinup_start: datetime = None,
-        spinup_end: datetime = None,
         netcdf: bool = True,
         harmonic_analysis: bool = False,
     ):
@@ -74,9 +73,6 @@ class AdcircRun(Fort15):
             sampling_rate,
             start,
             end,
-            spinup,
-            spinup_start,
-            spinup_end,
             netcdf,
             harmonic_analysis,
         )
@@ -85,9 +81,6 @@ class AdcircRun(Fort15):
                 'sampling_rate': sampling_rate,
                 'start': start,
                 'end': end,
-                'spinup': spinup,
-                'spinup_start': spinup_start,
-                'spinup_end': spinup_end,
                 'netcdf': netcdf,
                 'harmonic_analysis': harmonic_analysis,
             }
@@ -98,9 +91,6 @@ class AdcircRun(Fort15):
         sampling_rate: timedelta,
         start: Union[timedelta, int] = None,
         end: Union[timedelta, int] = None,
-        spinup: Union[timedelta, int] = None,
-        spinup_start: Union[timedelta, int] = None,
-        spinup_end: Union[timedelta, int] = None,
         netcdf: bool = True,
         harmonic_analysis: bool = False,
     ):
@@ -108,9 +98,6 @@ class AdcircRun(Fort15):
             sampling_rate,
             start,
             end,
-            spinup,
-            spinup_start,
-            spinup_end,
             netcdf,
             harmonic_analysis,
         )
@@ -119,9 +106,6 @@ class AdcircRun(Fort15):
                 'sampling_rate': sampling_rate,
                 'start': start,
                 'end': end,
-                'spinup': spinup,
-                'spinup_start': spinup_start,
-                'spinup_end': spinup_end,
                 'netcdf': netcdf,
                 'harmonic_analysis': harmonic_analysis,
             }
@@ -132,9 +116,6 @@ class AdcircRun(Fort15):
         sampling_rate: timedelta,
         start: Union[timedelta, int] = None,
         end: Union[timedelta, int] = None,
-        spinup: Union[timedelta, int] = None,
-        spinup_start: Union[timedelta, int] = None,
-        spinup_end: Union[timedelta, int] = None,
         netcdf: bool = True,
         harmonic_analysis: bool = False,
     ):
@@ -142,9 +123,6 @@ class AdcircRun(Fort15):
             sampling_rate,
             start,
             end,
-            spinup,
-            spinup_start,
-            spinup_end,
             netcdf,
             harmonic_analysis,
         )
@@ -153,9 +131,6 @@ class AdcircRun(Fort15):
                 'sampling_rate': sampling_rate,
                 'start': start,
                 'end': end,
-                'spinup': spinup,
-                'spinup_start': spinup_start,
-                'spinup_end': spinup_end,
                 'netcdf': netcdf,
                 'harmonic_analysis': harmonic_analysis,
             }
@@ -166,9 +141,6 @@ class AdcircRun(Fort15):
         sampling_rate: timedelta,
         start: Union[timedelta, int] = None,
         end: Union[timedelta, int] = None,
-        spinup: Union[timedelta, int] = None,
-        spinup_start: Union[timedelta, int] = None,
-        spinup_end: Union[timedelta, int] = None,
         netcdf: bool = True,
         harmonic_analysis: bool = False,
     ):
@@ -176,9 +148,6 @@ class AdcircRun(Fort15):
             sampling_rate,
             start,
             end,
-            spinup,
-            spinup_start,
-            spinup_end,
             netcdf,
             harmonic_analysis,
         )
@@ -187,9 +156,6 @@ class AdcircRun(Fort15):
                 'sampling_rate': sampling_rate,
                 'start': start,
                 'end': end,
-                'spinup': spinup,
-                'spinup_start': spinup_start,
-                'spinup_end': spinup_end,
                 'netcdf': netcdf,
                 'harmonic_analysis': harmonic_analysis,
             }
@@ -200,9 +166,6 @@ class AdcircRun(Fort15):
         sampling_rate: timedelta,
         start: Union[timedelta, int] = None,
         end: Union[timedelta, int] = None,
-        spinup: Union[timedelta, int] = None,
-        spinup_start: Union[timedelta, int] = None,
-        spinup_end: Union[timedelta, int] = None,
         netcdf: bool = True,
         harmonic_analysis: bool = False,
     ):
@@ -210,9 +173,6 @@ class AdcircRun(Fort15):
             sampling_rate,
             start,
             end,
-            spinup,
-            spinup_start,
-            spinup_end,
             netcdf,
             harmonic_analysis,
         )
@@ -221,9 +181,6 @@ class AdcircRun(Fort15):
                 'sampling_rate': sampling_rate,
                 'start': start,
                 'end': end,
-                'spinup': spinup,
-                'spinup_start': spinup_start,
-                'spinup_end': spinup_end,
                 'netcdf': netcdf,
                 'harmonic_analysis': harmonic_analysis,
             }
@@ -234,9 +191,6 @@ class AdcircRun(Fort15):
         sampling_rate: timedelta,
         start: Union[timedelta, int] = None,
         end: Union[timedelta, int] = None,
-        spinup: Union[timedelta, int] = None,
-        spinup_start: Union[timedelta, int] = None,
-        spinup_end: Union[timedelta, int] = None,
         netcdf: bool = True,
         harmonic_analysis: bool = False,
     ):
@@ -244,9 +198,6 @@ class AdcircRun(Fort15):
             sampling_rate,
             start,
             end,
-            spinup,
-            spinup_start,
-            spinup_end,
             netcdf,
             harmonic_analysis,
         )
@@ -255,9 +206,6 @@ class AdcircRun(Fort15):
                 'sampling_rate': sampling_rate,
                 'start': start,
                 'end': end,
-                'spinup': spinup,
-                'spinup_start': spinup_start,
-                'spinup_end': spinup_end,
                 'netcdf': netcdf,
                 'harmonic_analysis': harmonic_analysis,
             }
@@ -268,9 +216,6 @@ class AdcircRun(Fort15):
         sampling_rate: timedelta,
         start: Union[timedelta, int] = None,
         end: Union[timedelta, int] = None,
-        spinup: Union[timedelta, int] = None,
-        spinup_start: Union[timedelta, int] = None,
-        spinup_end: Union[timedelta, int] = None,
         netcdf: bool = True,
         harmonic_analysis: bool = False,
     ):
@@ -278,9 +223,6 @@ class AdcircRun(Fort15):
             sampling_rate,
             start,
             end,
-            spinup,
-            spinup_start,
-            spinup_end,
             netcdf,
             harmonic_analysis,
         )
@@ -289,9 +231,6 @@ class AdcircRun(Fort15):
                 'sampling_rate': sampling_rate,
                 'start': start,
                 'end': end,
-                'spinup': spinup,
-                'spinup_start': spinup_start,
-                'spinup_end': spinup_end,
                 'netcdf': netcdf,
                 'harmonic_analysis': harmonic_analysis,
             }
@@ -302,9 +241,6 @@ class AdcircRun(Fort15):
         sampling_rate: timedelta,
         start: Union[timedelta, int] = None,
         end: Union[timedelta, int] = None,
-        spinup: Union[timedelta, int] = None,
-        spinup_start: Union[timedelta, int] = None,
-        spinup_end: Union[timedelta, int] = None,
         netcdf: bool = True,
         harmonic_analysis: bool = False,
     ):
@@ -312,9 +248,6 @@ class AdcircRun(Fort15):
             sampling_rate,
             start,
             end,
-            spinup,
-            spinup_start,
-            spinup_end,
             netcdf,
             harmonic_analysis,
         )
@@ -323,9 +256,6 @@ class AdcircRun(Fort15):
                 'sampling_rate': sampling_rate,
                 'start': start,
                 'end': end,
-                'spinup': spinup,
-                'spinup_start': spinup_start,
-                'spinup_end': spinup_end,
                 'netcdf': netcdf,
                 'harmonic_analysis': harmonic_analysis,
             }
@@ -348,7 +278,6 @@ class AdcircRun(Fort15):
         output_directory: str,
         overwrite: bool = False,
         fort14: str = 'fort.14',
-        fort13: str = 'fort.13',
         fort22: str = 'fort.22',
         fort15: str = 'fort.15',
         coldstart: str = 'fort.15.coldstart',
@@ -362,47 +291,19 @@ class AdcircRun(Fort15):
         # write fort.14
         if fort14:
             path = output_directory / fort14
-            self.mesh.write(path, overwrite)
+            self.mesh.write(path, False)
 
-        # write fort.13 (optional)
-        if fort13:
-            if len(self.mesh.get_nodal_attribute_names()) > 0:
-                self.mesh.nodal_attributes.write(output_directory / fort13, overwrite)
+        # write fort.15
+        if self.wind_forcing is not None:
+            if fort22:
+                self.wind_forcing.write(output_directory / fort22, overwrite)
 
-        # write fort.15 -> this part has two different cases that depend
-        # on the input configuration given by the user.
-
-        # CASE 1:
-        # When wind forcing is present, the run has to (almost) necessarily
-        # be executed in two phases: coldstart and hotstart.
-        # In a nutshell, a single phase run (coldstart only) that includes
-        # meteorological inputs is currently not supported.
-        # For this reason, no spiunp time given means a single phase run
-        # which at the current stage implies tides only.
-        # In this case we set IHOT=0 but call the hotstart writer.
-        if self.spinup_time == timedelta(seconds=0):
-            # easiest way is to override IHOT to 0
-            # IHOT depends on _runtype which is not set on this case.
-            self._IHOT = 0
-            # and call the hotstart writer,
-            super().write('hotstart', output_directory / fort15, overwrite)
-            if self.wind_forcing is not None:
-                if fort22:
-                    self.wind_forcing.write(output_directory / fort22, overwrite)
-
-        # CASE 2:
-        # This is a run that the user specified some ramping time.
-        # It may or may not include wind files.
-        # In other words, one can do a tidal only run as coldstart/hotstart
-        # as well as a tidal-only spinup + meteorological hotstart.
-        else:
-            if self.wind_forcing is not None:
-                if fort22:
-                    self.wind_forcing.write(output_directory / fort22, overwrite)
-            if coldstart:
-                super().write('coldstart', output_directory / coldstart, overwrite)
-            if hotstart:
-                super().write('hotstart', output_directory / hotstart, overwrite)
+        if coldstart:
+            logging.warning('write coldstart')
+            super().write('coldstart', output_directory / coldstart, overwrite)
+        if hotstart:
+            logging.warning('write hotstart')
+            super().write('hotstart', output_directory / hotstart, overwrite)
 
         if driver is not None:
             if isinstance(self._server_config, SlurmConfig) or isinstance(self._server_config, BatchConfig):
@@ -490,13 +391,7 @@ class AdcircRun(Fort15):
 
     @property
     def tidal_forcing(self):
-        if not hasattr(self, '_tidal_forcing'):
-            self._tidal_forcing = self.mesh.forcings.tides
-            if isinstance(self._tidal_forcing, Tides):
-                self._tidal_forcing.start_date = self.start_date
-                self._tidal_forcing.end_date = self.end_date
-                self._tidal_forcing.spinup_time = self.spinup_time
-        return self._tidal_forcing
+        return self.mesh.forcings.tides
 
     @property
     def wind_forcing(self):
@@ -517,17 +412,6 @@ class AdcircRun(Fort15):
     @property
     def end_date(self):
         return self._end_date
-
-    @property
-    def forcing_start_date(self):
-        return self.start_date - self.spinup_time
-
-    @property
-    def spinup_factor(self):
-        try:
-            return self.__spinup_factor
-        except AttributeError:
-            return 1.0
 
     @property
     def coldstart(self):
@@ -750,18 +634,12 @@ class AdcircRun(Fort15):
         sampling_rate: timedelta,
         start: datetime,
         end: datetime,
-        spinup: Union[timedelta, int],
-        spinup_start: datetime,
-        spinup_end: datetime,
         netcdf: bool,
         harmonic_analysis: bool,
     ):
         self._validate_argument(sampling_rate, timedelta, 'sampling_rate')
         self._validate_argument(start, datetime, 'start')
         self._validate_argument(end, datetime, 'end')
-        self._validate_argument(spinup, [timedelta, int], 'spinup')
-        self._validate_argument(spinup_start, datetime, 'spinup_start')
-        self._validate_argument(spinup_end, datetime, 'spinup_end')
         self._validate_argument(netcdf, bool, 'netcdf', include_none=False)
         self._validate_argument(
             harmonic_analysis, bool, 'harmonic_analysis', include_none=False
@@ -863,10 +741,7 @@ class AdcircRun(Fort15):
         if start_date is None:
             if isinstance(self.mesh.forcings.wind, BestTrackForcing):
                 start_date = self.mesh.forcings.wind.start_date
-                self.mesh.forcings.tides.start_date = self.mesh.forcings.wind.start_date
         else:
-            if isinstance(self.mesh.forcings.tides, Tides):
-                self.mesh.forcings.tides.start_date = start_date
             if isinstance(self.mesh.forcings.wind, BestTrackForcing):
                 self.mesh.forcings.wind.start_date = start_date
         assert isinstance(start_date, datetime)
@@ -878,15 +753,10 @@ class AdcircRun(Fort15):
 
     @_end_date.setter
     def _end_date(self, end_date):
-        if isinstance(end_date, timedelta):
-            end_date = self._start_date + end_date
         if end_date is None:
             if isinstance(self.wind_forcing, BestTrackForcing):
                 end_date = self.wind_forcing.end_date
-                self.mesh.forcings.tides.end_date = self.mesh.forcings.wind.end_date
         else:
-            if isinstance(self.mesh.forcings.tides, Tides):
-                self.mesh.forcings.tides.end_date = end_date
             if isinstance(self.mesh.forcings.wind, BestTrackForcing):
                 self.mesh.forcings.wind.end_date = end_date
 
@@ -925,9 +795,6 @@ class AdcircRun(Fort15):
             'sampling_rate': None,
             'start': None,
             'end': None,
-            'spinup': None,
-            'spinup_start': None,
-            'spinup_end': None,
             'netcdf': self.netcdf,
             'harmonic_analysis': False,
         }

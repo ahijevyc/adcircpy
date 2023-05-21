@@ -32,10 +32,7 @@ class DriverFile:
 
         f += '\n'
 
-        if self._driver.spinup_time == timedelta(seconds=0):
-            f += self._single_phase_run + '\n'
-        else:
-            f += self._dual_phase_run + '\n'
+        f += self._dual_phase_run + '\n'
 
         f += self._clean_directory + '\n' + 'main\n'
 
