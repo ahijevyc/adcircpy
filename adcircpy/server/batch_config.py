@@ -16,7 +16,7 @@ class BatchConfig(BaseServerConfig):
         walltime: timedelta,
         memory: str = None,
         queue : str = None,
-        filename: str = 'slurm.job',
+        filename: str = 'batch.job',
         run_name: str = None,
         mail_user: str = None,
         modules: [str] = None,
@@ -26,7 +26,7 @@ class BatchConfig(BaseServerConfig):
         nodes: int = None,
     ):
         """
-        Instantiate a new Slurm shell script (`*.job`).
+        Instantiate a new batch shell script (`*.job`).
 
         :param account: charge account 
         :param ntasks: number of total tasks to run
@@ -78,7 +78,7 @@ class BatchConfig(BaseServerConfig):
     @_filename.setter
     def _filename(self, filename):
         if filename is None:
-            filename = 'slurm.job'
+            filename = 'batch.job'
         self.__filename = filename
 
     @property

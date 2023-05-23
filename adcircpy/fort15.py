@@ -1578,11 +1578,11 @@ class Fort15:
 
     @property
     def RNDAY(self) -> int:
-        if self._runtype == 'coldstart':
-            RNDAY = self.start_date - self.tidal_forcing.start_date
-        else:
+        try:
+            return self._RNDAY
+        except AttributeError:
             RNDAY = self.end_date - self.tidal_forcing.start_date
-        return RNDAY / timedelta(days=1)
+            return RNDAY / timedelta(days=1)
 
     @property
     def DRAMP(self) -> str:
@@ -1667,6 +1667,8 @@ class Fort15:
         try:
             return self.__DRAMPMete
         except AttributeError:
+            if self.wind_forcing is None:
+                return 0
             return self.wind_forcing.spinup_time / timedelta(days=1)
 
     @DRAMPMete.setter
@@ -2361,10 +2363,7 @@ class Fort15:
         try:
             return self.__NHSTAR
         except AttributeError:
-            if self._runtype == 'coldstart':
-                return 5
-            else:
-                return 0
+            return 5
 
     @NHSTAR.setter
     def NHSTAR(self, NHSTAR: int):
@@ -2552,27 +2551,23 @@ class Fort15:
 
     def _get_NOUT__(self, output_type, physical_var: str):
         output = self._container[output_type][physical_var]
-        if output['sampling_rate'] is not None:
-            if output['netcdf'] is True:
-                return -5
-            else:
-                return -1
-        else:
+        if output['sampling_rate'] is None:
             return 0
+        return 5
 
     def _get_TOUTS__(self, output_type: str, physical_var: str) -> int:
         if self._runtype == "coldstart":
             return 0
         else:
-            return (self.wind_forcing.start_date - self.tidal_forcing.start_date) / timedelta(days=1)
+            if self.wind_forcing:
+                return (self.wind_forcing.start_date - self.tidal_forcing.start_date) / timedelta(days=1)
+            else:
+                return 0
 
     def _get_TOUTF__(self, output_type: str, physical_var: str):
         output = self._container[output_type][physical_var]
         if output['sampling_rate'] is not None:
-            if self._runtype == "coldstart":
-                time = self.wind_forcing.start_date - self.tidal_forcing.start_date
-            else:
-                time = self.end_date - self.tidal_forcing.start_date
+            time = self.end_date - self.tidal_forcing.start_date
         else:
             time = timedelta(seconds=0)
 
@@ -2594,12 +2589,8 @@ class Fort15:
     def _get_harmonic_analysis_state(self, output: {str: Any}):
         state = 0
         if output['harmonic_analysis']:
-            if self.netcdf:
-                return 5
-            else:
-                return 1
+            return 5
         return state
-
 
 def fort15_line(value: Any, name: str = None, description: str = None) -> str:
     line = f'{value}'

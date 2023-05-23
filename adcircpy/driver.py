@@ -30,14 +30,12 @@ class AdcircRun(Fort15):
         start_date: datetime = None,
         end_date: datetime = None,
         spinup_time: timedelta = None,
-        netcdf: bool = True,
         server_config: Union[int, BatchConfig, SSHConfig, SlurmConfig] = None,
     ):
         super().__init__(mesh)
         self._start_date = start_date
         self._end_date = end_date
         self._spinup_time = spinup_time
-        self._netcdf = netcdf
         self._server_config = server_config
 
     def add_elevation_output_station(
@@ -66,14 +64,12 @@ class AdcircRun(Fort15):
         sampling_rate: timedelta,
         start: datetime = None,
         end: datetime = None,
-        netcdf: bool = True,
         harmonic_analysis: bool = False,
     ):
         self._certify_output_request(
             sampling_rate,
             start,
             end,
-            netcdf,
             harmonic_analysis,
         )
         self._container['stations']['elevation'].update(
@@ -81,7 +77,6 @@ class AdcircRun(Fort15):
                 'sampling_rate': sampling_rate,
                 'start': start,
                 'end': end,
-                'netcdf': netcdf,
                 'harmonic_analysis': harmonic_analysis,
             }
         )
@@ -91,14 +86,12 @@ class AdcircRun(Fort15):
         sampling_rate: timedelta,
         start: Union[timedelta, int] = None,
         end: Union[timedelta, int] = None,
-        netcdf: bool = True,
         harmonic_analysis: bool = False,
     ):
         self._certify_output_request(
             sampling_rate,
             start,
             end,
-            netcdf,
             harmonic_analysis,
         )
         self._container['stations']['velocity'].update(
@@ -106,7 +99,6 @@ class AdcircRun(Fort15):
                 'sampling_rate': sampling_rate,
                 'start': start,
                 'end': end,
-                'netcdf': netcdf,
                 'harmonic_analysis': harmonic_analysis,
             }
         )
@@ -116,14 +108,12 @@ class AdcircRun(Fort15):
         sampling_rate: timedelta,
         start: Union[timedelta, int] = None,
         end: Union[timedelta, int] = None,
-        netcdf: bool = True,
         harmonic_analysis: bool = False,
     ):
         self._certify_output_request(
             sampling_rate,
             start,
             end,
-            netcdf,
             harmonic_analysis,
         )
         self._container['stations']['meteorological'].update(
@@ -131,7 +121,6 @@ class AdcircRun(Fort15):
                 'sampling_rate': sampling_rate,
                 'start': start,
                 'end': end,
-                'netcdf': netcdf,
                 'harmonic_analysis': harmonic_analysis,
             }
         )
@@ -141,14 +130,12 @@ class AdcircRun(Fort15):
         sampling_rate: timedelta,
         start: Union[timedelta, int] = None,
         end: Union[timedelta, int] = None,
-        netcdf: bool = True,
         harmonic_analysis: bool = False,
     ):
         self._certify_output_request(
             sampling_rate,
             start,
             end,
-            netcdf,
             harmonic_analysis,
         )
         self._container['stations']['concentration'].update(
@@ -156,7 +143,6 @@ class AdcircRun(Fort15):
                 'sampling_rate': sampling_rate,
                 'start': start,
                 'end': end,
-                'netcdf': netcdf,
                 'harmonic_analysis': harmonic_analysis,
             }
         )
@@ -166,14 +152,12 @@ class AdcircRun(Fort15):
         sampling_rate: timedelta,
         start: Union[timedelta, int] = None,
         end: Union[timedelta, int] = None,
-        netcdf: bool = True,
         harmonic_analysis: bool = False,
     ):
         self._certify_output_request(
             sampling_rate,
             start,
             end,
-            netcdf,
             harmonic_analysis,
         )
         self._container['surface']['elevation'].update(
@@ -181,7 +165,6 @@ class AdcircRun(Fort15):
                 'sampling_rate': sampling_rate,
                 'start': start,
                 'end': end,
-                'netcdf': netcdf,
                 'harmonic_analysis': harmonic_analysis,
             }
         )
@@ -191,14 +174,12 @@ class AdcircRun(Fort15):
         sampling_rate: timedelta,
         start: Union[timedelta, int] = None,
         end: Union[timedelta, int] = None,
-        netcdf: bool = True,
         harmonic_analysis: bool = False,
     ):
         self._certify_output_request(
             sampling_rate,
             start,
             end,
-            netcdf,
             harmonic_analysis,
         )
         self._container['surface']['velocity'].update(
@@ -206,7 +187,6 @@ class AdcircRun(Fort15):
                 'sampling_rate': sampling_rate,
                 'start': start,
                 'end': end,
-                'netcdf': netcdf,
                 'harmonic_analysis': harmonic_analysis,
             }
         )
@@ -216,14 +196,12 @@ class AdcircRun(Fort15):
         sampling_rate: timedelta,
         start: Union[timedelta, int] = None,
         end: Union[timedelta, int] = None,
-        netcdf: bool = True,
         harmonic_analysis: bool = False,
     ):
         self._certify_output_request(
             sampling_rate,
             start,
             end,
-            netcdf,
             harmonic_analysis,
         )
         self._container['surface']['meteorological'].update(
@@ -231,7 +209,6 @@ class AdcircRun(Fort15):
                 'sampling_rate': sampling_rate,
                 'start': start,
                 'end': end,
-                'netcdf': netcdf,
                 'harmonic_analysis': harmonic_analysis,
             }
         )
@@ -241,14 +218,12 @@ class AdcircRun(Fort15):
         sampling_rate: timedelta,
         start: Union[timedelta, int] = None,
         end: Union[timedelta, int] = None,
-        netcdf: bool = True,
         harmonic_analysis: bool = False,
     ):
         self._certify_output_request(
             sampling_rate,
             start,
             end,
-            netcdf,
             harmonic_analysis,
         )
         self._container['surface']['concentration'].update(
@@ -256,7 +231,6 @@ class AdcircRun(Fort15):
                 'sampling_rate': sampling_rate,
                 'start': start,
                 'end': end,
-                'netcdf': netcdf,
                 'harmonic_analysis': harmonic_analysis,
             }
         )
@@ -284,6 +258,7 @@ class AdcircRun(Fort15):
         hotstart: str = 'fort.15.hotstart',
         driver: str = 'driver.sh',
         nproc: int = None,
+        reuse: bool = False,
     ):
         output_directory = pathlib.Path(output_directory)
         output_directory.mkdir(parents=True, exist_ok=True)
@@ -291,7 +266,7 @@ class AdcircRun(Fort15):
         # write fort.14
         if fort14:
             path = output_directory / fort14
-            self.mesh.write(path, False)
+            self.mesh.write(path, overwrite = False)
 
         # write fort.15
         if self.wind_forcing is not None:
@@ -299,16 +274,16 @@ class AdcircRun(Fort15):
                 self.wind_forcing.write(output_directory / fort22, overwrite)
 
         if coldstart:
-            logging.warning('write coldstart')
+            logging.warning('write coldstart fort.15')
             super().write('coldstart', output_directory / coldstart, overwrite)
         if hotstart:
-            logging.warning('write hotstart')
+            logging.warning('write hotstart fort.15')
             super().write('hotstart', output_directory / hotstart, overwrite)
 
         if driver is not None:
             if isinstance(self._server_config, SlurmConfig) or isinstance(self._server_config, BatchConfig):
                 driver = self._server_config._filename
-            script = DriverFile(self, nproc)
+            script = DriverFile(self, nproc, coldstart=coldstart, hotstart=hotstart, reuse=reuse)
             script.write(output_directory / driver, overwrite)
 
     def import_stations(
@@ -420,10 +395,6 @@ class AdcircRun(Fort15):
     @property
     def hotstart(self):
         return self.fort15('hotstart')
-
-    @property
-    def netcdf(self):
-        return self._netcdf
 
     @property
     def container(self):
@@ -634,13 +605,11 @@ class AdcircRun(Fort15):
         sampling_rate: timedelta,
         start: datetime,
         end: datetime,
-        netcdf: bool,
         harmonic_analysis: bool,
     ):
         self._validate_argument(sampling_rate, timedelta, 'sampling_rate')
         self._validate_argument(start, datetime, 'start')
         self._validate_argument(end, datetime, 'end')
-        self._validate_argument(netcdf, bool, 'netcdf', include_none=False)
         self._validate_argument(
             harmonic_analysis, bool, 'harmonic_analysis', include_none=False
         )
@@ -738,13 +707,7 @@ class AdcircRun(Fort15):
 
     @_start_date.setter
     def _start_date(self, start_date):
-        if start_date is None:
-            if isinstance(self.mesh.forcings.wind, BestTrackForcing):
-                start_date = self.mesh.forcings.wind.start_date
-        else:
-            if isinstance(self.mesh.forcings.wind, BestTrackForcing):
-                self.mesh.forcings.wind.start_date = start_date
-        assert isinstance(start_date, datetime)
+        start_date = self.tidal_forcing.start_date
         self.__start_date = start_date
 
     @property
@@ -753,25 +716,9 @@ class AdcircRun(Fort15):
 
     @_end_date.setter
     def _end_date(self, end_date):
-        if end_date is None:
-            if isinstance(self.wind_forcing, BestTrackForcing):
-                end_date = self.wind_forcing.end_date
-        else:
-            if isinstance(self.mesh.forcings.wind, BestTrackForcing):
-                self.mesh.forcings.wind.end_date = end_date
-
-        assert isinstance(end_date, datetime)
+        end_date = self.tidal_forcing.end_date
         assert end_date > self.start_date
         self.__end_date = end_date
-
-    @property
-    def _netcdf(self):
-        return self.__netcdf
-
-    @_netcdf.setter
-    def _netcdf(self, netcdf):
-        assert isinstance(netcdf, bool)
-        self.__netcdf = netcdf
 
     @property
     def _server_config(self):
@@ -795,7 +742,6 @@ class AdcircRun(Fort15):
             'sampling_rate': None,
             'start': None,
             'end': None,
-            'netcdf': self.netcdf,
             'harmonic_analysis': False,
         }
 

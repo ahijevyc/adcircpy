@@ -7,9 +7,12 @@ from adcircpy.server.slurm_config import SlurmConfig
 
 
 class DriverFile:
-    def __init__(self, driver, nprocs: int = None):
+    def __init__(self, driver, nprocs: int = None, coldstart: bool = True, hotstart: bool = True, reuse: bool = True):
         self._driver = driver
         self.__nprocs = nprocs
+        self._coldstart = coldstart
+        self._hotstart = hotstart
+        self.reuse = reuse
 
     def write(self, path: str, overwrite: bool = False):
         if not os.path.exists(path) or overwrite:
@@ -32,9 +35,16 @@ class DriverFile:
 
         f += '\n'
 
-        f += self._dual_phase_run + '\n'
+        if self._coldstart and self._hotstart:
+            f += self._dual_phase_run + '\n'
+        else:
+            if self.reuse:
+                f += self._reuse_run + '\n'
+            else:
+                f += self._single_phase_run + '\n'
 
-        f += self._clean_directory + '\n' + 'main\n'
+        f += self._clean_directory + '\n' 
+        f += 'main\n'
 
         return f
 
@@ -46,7 +56,27 @@ class DriverFile:
         return f
 
     @property
+    def _reuse_run(self) -> str:
+        f = (
+            'cd work\n'
+        )
+
+        if self._executable.startswith('p'):
+            f += (
+                f'adcprep --np {self._nprocs} --prepall\n'
+                f'{self._mpi} {self._executable}\n'
+            )
+        else:
+            f += f'{self._executable}\n'
+
+        f += 'cd ..'
+
+        return bash_function('main', f)
+
+
+    @property
     def _single_phase_run(self) -> str:
+
         f = (
             'rm -rf work\n'
             'mkdir work\n'
@@ -65,7 +95,8 @@ class DriverFile:
         else:
             f += f'{self._executable}\n'
 
-        f += 'clean_directory\n' + 'cd ..'
+        #f += 'clean_directory\n'
+        f += 'cd ..'
 
         return bash_function('main', f)
 
@@ -134,7 +165,8 @@ class DriverFile:
         if not isinstance(self._server_config, SlurmConfig):
             f += f'2>&1 | tee ../{self._logfile}'
 
-        f += '\nclean_directory\n' 'cd ..'
+        #f += '\nclean_directory\n'
+        f += 'cd ..'
 
         return bash_function('run_coldstart_phase', f)
 
@@ -149,10 +181,7 @@ class DriverFile:
             'ln -sf ../fort.15.hotstart ./fort.15\n'
         )
 
-        if self._driver.netcdf is True:
-            f += 'ln -sf ../coldstart/fort.67.nc\n'
-        else:
-            f += 'ln -sf ../coldstart/fort.67\n'
+        f += 'ln -sf ../coldstart/fort.67.nc\n'
 
         if self._driver.wind_forcing is not None:
             if self._driver.NWS in [17, 19, 20]:
