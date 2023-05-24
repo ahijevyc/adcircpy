@@ -252,6 +252,7 @@ class AdcircRun(Fort15):
         output_directory: str,
         overwrite: bool = False,
         fort14: str = 'fort.14',
+        fort13: str = 'fort.13',
         fort22: str = 'fort.22',
         fort15: str = 'fort.15',
         coldstart: str = 'fort.15.coldstart',
@@ -267,6 +268,11 @@ class AdcircRun(Fort15):
         if fort14:
             path = output_directory / fort14
             self.mesh.write(path, overwrite = False)
+
+        # write fort.13 (optional)
+        if fort13:
+            if len(self.mesh.get_nodal_attribute_names()) > 0:
+                self.mesh.nodal_attributes.write(output_directory / fort13, overwrite=False)
 
         # write fort.15
         if self.wind_forcing is not None:

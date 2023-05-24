@@ -22,8 +22,8 @@ class NodalAttributes:
         ]
 
         for name in self.get_attribute_names():
+            logging.info(f"{name} default indexes")
             attribute = self.get_attribute(name)
-            logging.info(f"{attribute} default indexes")
             fort13.extend(
                 [
                     f'{name}',
@@ -33,9 +33,9 @@ class NodalAttributes:
                 ]
             )
         for name in self.get_attribute_names():
+            logging.info(f"{name} non-default indexes")
             attribute = self.get_attribute(name)
             fort13.extend([f'{name}', f'{len(attribute["non_default_indexes"])}'])
-            logging.info(f"{attribute} non-default indexes")
             for i, values in enumerate(
                 attribute['values'][attribute['non_default_indexes'], :]
             ):

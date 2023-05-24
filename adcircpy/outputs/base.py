@@ -57,7 +57,8 @@ class SurfaceOutput(metaclass=abc.ABCMeta):
             vmin=kwargs.get('vmin', np.min(self.values)),
             vmax=kwargs.get('vmax', np.max(self.values)),
         )
-        plt.gca().set_title(self.time[self.index].strftime('%b %d, %Y %H:%M'))
+        if isinstance(self, SurfaceOutputTimeseries):
+            plt.gca().set_title(self.time[self.index].strftime('%b %d, %Y %H:%M'))
         self.triangulation.set_mask(None)
         if kwargs.get('cbar') is not None:
             plt.colorbar(_ax)
