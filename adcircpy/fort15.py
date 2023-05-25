@@ -1691,12 +1691,13 @@ class Fort15:
         try:
             return self.__DUnRampMete
         except AttributeError:
-            return 0.0
+            if self.wind_forcing: 
+                return (self.wind_forcing.start_date - self.tidal_forcing.start_date) / timedelta(days=1)
+            else:
+                return 0.
 
     @DUnRampMete.setter
     def DUnRampMete(self, DUnRampMete: float):
-        if DUnRampMete is None:
-            DUnRampMete = (self.wind_forcing.start_date - self.tidal_forcing.start_date) / timedelta(days=1)
         self.__DUnRampMete = float(DUnRampMete)
 
     @property

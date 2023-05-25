@@ -1,4 +1,5 @@
 from datetime import timedelta
+import os
 import uuid
 
 from adcircpy.server.base_config import BaseServerConfig
@@ -113,9 +114,9 @@ class BatchConfig(BaseServerConfig):
         if self._queue is not None:
             f += f'#PBS -M {self._mail_user}\n'
 
-        f += '\nulimit -s unlimited\nset -e\n'
-
-        f += f'\n' f'module reset\n'
+        f += f'\n' f'setenv TMPDIR /glade/scratch/{os.getenv("USER")}/temp\n'
+        f += f'mkdir -p $TMPDIR\n'
+        f += f'module reset\n'
 
         if self._path_prefix is not None:
             f += f'\n' f'PATH={self._path_prefix}:$PATH\n'

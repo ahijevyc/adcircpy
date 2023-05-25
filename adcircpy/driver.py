@@ -250,14 +250,8 @@ class AdcircRun(Fort15):
     def write(
         self,
         output_directory: str,
+        fort15 = 'fort.15',
         overwrite: bool = False,
-        fort14: str = 'fort.14',
-        fort13: str = 'fort.13',
-        fort22: str = 'fort.22',
-        fort15: str = 'fort.15',
-        coldstart: str = 'fort.15.coldstart',
-        hotstart: str = 'fort.15.hotstart',
-        driver: str = 'driver.sh',
         nproc: int = None,
         reuse: bool = False,
     ):
@@ -265,32 +259,25 @@ class AdcircRun(Fort15):
         output_directory.mkdir(parents=True, exist_ok=True)
 
         # write fort.14
-        if fort14:
-            path = output_directory / fort14
-            self.mesh.write(path, overwrite = False)
+        path = output_directory / 'fort.14'
+        self.mesh.write(path, overwrite = False)
 
         # write fort.13 (optional)
-        if fort13:
-            if len(self.mesh.get_nodal_attribute_names()) > 0:
-                self.mesh.nodal_attributes.write(output_directory / fort13, overwrite=False)
+        if len(self.mesh.get_nodal_attribute_names()) > 0:
+            self.mesh.nodal_attributes.write(output_directory / 'fort.13', overwrite=False)
+
+        # write fort.22
+        if self.wind_forcing is not None:
+            self.wind_forcing.write(output_directory / 'fort.22', overwrite)
 
         # write fort.15
-        if self.wind_forcing is not None:
-            if fort22:
-                self.wind_forcing.write(output_directory / fort22, overwrite)
+        runtype = 'hotstart' if self._IHOT else 'coldstart'
+        logging.warning(f'write {fort15} {runtype}')
+        super().write(runtype, output_directory / fort15, overwrite)
 
-        if coldstart:
-            logging.warning('write coldstart fort.15')
-            super().write('coldstart', output_directory / coldstart, overwrite)
-        if hotstart:
-            logging.warning('write hotstart fort.15')
-            super().write('hotstart', output_directory / hotstart, overwrite)
-
-        if driver is not None:
-            if isinstance(self._server_config, SlurmConfig) or isinstance(self._server_config, BatchConfig):
-                driver = self._server_config._filename
-            script = DriverFile(self, nproc, coldstart=coldstart, hotstart=hotstart, reuse=reuse)
-            script.write(output_directory / driver, overwrite)
+        driver = self._server_config._filename
+        script = DriverFile(self, nproc)
+        script.write(output_directory / driver, overwrite)
 
     def import_stations(
         self,
