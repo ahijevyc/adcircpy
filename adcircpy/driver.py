@@ -30,12 +30,14 @@ class AdcircRun(Fort15):
         start_date: datetime = None,
         end_date: datetime = None,
         spinup_time: timedelta = None,
+        reuse_decomp: bool = False,
         server_config: Union[int, BatchConfig, SSHConfig, SlurmConfig] = None,
     ):
         super().__init__(mesh)
         self._start_date = start_date
         self._end_date = end_date
         self._spinup_time = spinup_time
+        self.reuse_decomp = reuse_decomp
         self._server_config = server_config
 
     def add_elevation_output_station(
@@ -253,7 +255,6 @@ class AdcircRun(Fort15):
         fort15 = 'fort.15',
         overwrite: bool = False,
         nproc: int = None,
-        reuse: bool = False,
     ):
         output_directory = pathlib.Path(output_directory)
         output_directory.mkdir(parents=True, exist_ok=True)
@@ -275,8 +276,10 @@ class AdcircRun(Fort15):
         logging.warning(f'write {fort15} {runtype}')
         super().write(runtype, output_directory / fort15, overwrite)
 
+        # batch script
         driver = self._server_config._filename
-        script = DriverFile(self, nproc)
+        # give name of fort15 file to DriverFile so it can copy it to work directory before running.
+        script = DriverFile(self, output_directory/fort15, nproc)
         script.write(output_directory / driver, overwrite)
 
     def import_stations(
@@ -473,9 +476,7 @@ class AdcircRun(Fort15):
     def _run_padcirc(self, rundir, nproc=-1):
         nproc = self._get_nproc(nproc)
         cmd = list()
-        cmd.append('mpiexec')
-        cmd.append('-n')
-        cmd.append(str(nproc))
+        cmd.append('mpiexec_mpt')
         cmd.append('padcirc')
         err = self._launch_command(cmd, rundir)
 

@@ -59,7 +59,7 @@ class BatchConfig(BaseServerConfig):
 
     @property
     def nprocs(self):
-        return self._ntasks
+        return self._ntasks * self._nodes
 
     @property
     def _walltime(self):

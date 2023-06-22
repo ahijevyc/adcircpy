@@ -7,10 +7,10 @@ from adcircpy.server.slurm_config import SlurmConfig
 
 
 class DriverFile:
-    def __init__(self, driver, nprocs: int = None, reuse: bool = True, clean: bool = False):
+    def __init__(self, driver, fort15_file, nprocs: int = None, clean: bool = False):
         self.driver = driver
+        self.fort15_file = fort15_file
         self.__nprocs = nprocs
-        self.reuse = reuse
         self.clean = clean
 
     def write(self, path: str, overwrite: bool = False):
@@ -31,8 +31,8 @@ class DriverFile:
 
         f += '\n'
 
-        if self.reuse:
-            f += self._reuse_run + '\n'
+        if self.driver.reuse_decomp:
+            f += self._reuse_decomp+ '\n'
         else:
             f += self._single_phase_run + '\n'
 
@@ -43,7 +43,7 @@ class DriverFile:
 
 
     @property
-    def _reuse_run(self) -> str:
+    def _reuse_decomp(self) -> str:
         f = (
             'cd work\n'
         )
@@ -69,7 +69,7 @@ class DriverFile:
             'cd work\n'
             'ln -sf ../fort.14\n'
             'ln -sf ../fort.13\n'
-            f'ln -sf ../{fort15} ./fort.15\n'
+            f'ln -sf ../{self.fort15_file} ./fort.15\n'
         )
         if self.driver._IHOT:
             xx = str(self.driver._IHOT)[-2:]
@@ -151,7 +151,7 @@ class DriverFile:
         if isinstance(self._server_config, SlurmConfig):
             return self._server_config._launcher
         else:
-            return f'mpiexec -n {self._nprocs}'
+            return f'mpiexec_mpt'
 
     @property
     def _server_config(self) -> BaseServerConfig:
