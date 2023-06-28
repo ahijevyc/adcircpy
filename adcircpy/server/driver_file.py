@@ -79,11 +79,11 @@ class DriverFile:
 
         if self.driver.wind_forcing is not None:
             if self.driver.NWS in [17, 19, 20]:
-                opts = ""
+                opts = f" -n {self.driver.NWS}"
                 if self.driver.NWS == 19:
-                    opts = "-m 2 -z 1"
+                    opts += " -m 2 -z 1"
                 if self.driver.NWS == 20:
-                    opts = "-m 4 -z 2"
+                    opts += " -m 4 -z 2"
                 f += (
                     'ln -sf ../fort.22 ./fort.22\n'
                     f'aswip {opts}\n'
