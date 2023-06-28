@@ -119,7 +119,7 @@ class BatchConfig(BaseServerConfig):
         f += f'module reset\n'
 
         if self._path_prefix is not None:
-            f += f'\n' f'PATH={self._path_prefix}:$PATH\n'
+            f += f'\n' f'setenv PATH {self._path_prefix}:$PATH\n'
 
         if self._extra_commands is not None:
             f += '\n'

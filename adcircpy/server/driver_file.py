@@ -46,6 +46,7 @@ class DriverFile:
     def _reuse_decomp(self) -> str:
         f = (
             'cd work\n'
+            f'ln -sf {self.fort15_file} ./fort.15\n'
         )
 
         if self._executable.startswith('p'):
@@ -69,18 +70,23 @@ class DriverFile:
             'cd work\n'
             'ln -sf ../fort.14\n'
             'ln -sf ../fort.13\n'
-            f'ln -sf ../{self.fort15_file} ./fort.15\n'
+            f'ln -sf {self.fort15_file} ./fort.15\n'
         )
         if self.driver._IHOT:
             xx = str(self.driver._IHOT)[-2:]
-            coldstartfile = f'../coldstart/fort.{xx}.nc'
-            f += 'cp {coldstartfile} .\n'
+            coldstartfile = f'../../coldstart/work/fort.{xx}.nc'
+            f += f'cp {coldstartfile} .\n'
 
         if self.driver.wind_forcing is not None:
             if self.driver.NWS in [17, 19, 20]:
+                opts = ""
+                if self.driver.NWS == 19:
+                    opts = "-m 2 -z 1"
+                if self.driver.NWS == 20:
+                    opts = "-m 4 -z 2"
                 f += (
                     'ln -sf ../fort.22 ./fort.22\n'
-                    'aswip\n'
+                    f'aswip {opts}\n'
                     f'mv NWS_{self.driver.NWS}_fort.22 fort.22\n'
                 )
             else:
