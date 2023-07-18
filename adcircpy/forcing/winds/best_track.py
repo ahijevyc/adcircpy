@@ -105,6 +105,9 @@ class BestTrackForcing(VortexTrack, WindForcing):
             data["forecast_hours"] = ((dt - itime).dt.total_seconds() / 3600).astype(int).astype(str).str.pad(4)
             data["datetime"] = itime.strftime(" %Y%m%d%H")
             data["advisory"] = " ASYM"
+            # I found some empty strings in maximum_wave_height. Should be four spaces "    ".
+            # TODO: Track down code that introduces the empty spaces
+            data["maximum_wave_height"] = data["maximum_wave_height"].str.pad(4)
         logging.info(f"save {path}")
         data.to_csv(path, index=False, header=False)
 
