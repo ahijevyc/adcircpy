@@ -31,7 +31,7 @@ class SurfaceOutput(metaclass=abc.ABCMeta):
     def __init__(self, path, crs=None):
         self._path = path
         self._crs = crs
-        self._drop_dims = ["nvel", "nvertex", "mesh", "nope", "neta", "nbou"]
+        # avoid xarray error about scalar neta already existing
         self._drop_variables = ["neta", "nvel", "max_nvdll", "max_nvell", "time"]
 
     def export(self, path, overwrite=False):
