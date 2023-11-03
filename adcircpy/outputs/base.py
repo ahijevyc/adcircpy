@@ -10,6 +10,7 @@ from matplotlib.tri import Triangulation
 from netCDF4 import Dataset, num2date
 import numpy as np
 from pyproj import CRS
+import xarray
 
 from adcircpy.figures import figure
 from adcircpy.mesh.parsers import sms2dm
@@ -30,6 +31,8 @@ class SurfaceOutput(metaclass=abc.ABCMeta):
     def __init__(self, path, crs=None):
         self._path = path
         self._crs = crs
+        self._drop_dims = ["nvel", "nvertex", "mesh", "nope", "neta", "nbou"]
+        self._drop_variables = ["neta", "nvel", "max_nvdll", "max_nvell", "time"]
 
     def export(self, path, overwrite=False):
         coords = {i + 1: (self.x[i], self.y[i]) for i in range(len(self.values))}
@@ -45,9 +48,9 @@ class SurfaceOutput(metaclass=abc.ABCMeta):
 
     @figure
     def tricontourf(self, *args, axes=None, **kwargs):
-        if np.any(self.values.mask):
+        if np.any(self.values.isnull()):
             self.triangulation.set_mask(
-                np.any(self.values.mask[self.triangulation.triangles], axis=1)
+                np.any(self.values.isnull().values[self.triangulation.triangles], axis=1)
             )
         _ax = plt.tricontourf(
             self.triangulation,
@@ -61,7 +64,8 @@ class SurfaceOutput(metaclass=abc.ABCMeta):
             plt.gca().set_title(self.time[self.index].strftime('%b %d, %Y %H:%M'))
         self.triangulation.set_mask(None)
         if kwargs.get('cbar') is not None:
-            plt.colorbar(_ax)
+            cbar = plt.colorbar(_ax)
+            cbar.ax.set_ylabel(f"{self.values.standard_name.replace('_',' ')} ({self.values.units})", rotation=90)
         plt.gca().axis('scaled')
         return axes
 
@@ -70,6 +74,8 @@ class SurfaceOutput(metaclass=abc.ABCMeta):
     def x(self):
         if isinstance(self._ptr, Dataset):
             return self._ptr['x'][:].data
+        elif isinstance(self._ptr, xarray.Dataset):
+            return self._ptr['x']
         else:
             raise NotImplementedError('ascii')
 
@@ -78,6 +84,8 @@ class SurfaceOutput(metaclass=abc.ABCMeta):
     def y(self):
         if isinstance(self._ptr, Dataset):
             return self._ptr['y'][:].data
+        elif isinstance(self._ptr, xarray.Dataset):
+            return self._ptr['y']
         else:
             raise NotImplementedError('ascii')
 
@@ -85,6 +93,8 @@ class SurfaceOutput(metaclass=abc.ABCMeta):
     def time(self):
         if isinstance(self._ptr, Dataset):
             return num2date(self._ptr['time'][:], self._ptr['time'].units)
+        elif isinstance(self._ptr, xarray.Dataset):
+            return self._ptr['time']
         else:
             raise NotImplementedError('ascii')
 
@@ -93,6 +103,8 @@ class SurfaceOutput(metaclass=abc.ABCMeta):
     def triangles(self):
         if isinstance(self._ptr, Dataset):
             return self._ptr['element'][:].data - 1
+        elif isinstance(self._ptr, xarray.Dataset):
+            return self._ptr['element'] - 1
         else:
             raise NotImplementedError('ascii')
 
@@ -154,7 +166,7 @@ class SurfaceOutput(metaclass=abc.ABCMeta):
         try:
             return self.__values
         except AttributeError:
-            return self._ptr[self._physical_variable][:]
+            return self._ptr[self._physical_variable]
 
     @_values.setter
     def _values(self, values):
@@ -164,13 +176,15 @@ class SurfaceOutput(metaclass=abc.ABCMeta):
     @lru_cache(maxsize=None)
     def _ptr(self):
         try:
-            nc = Dataset(self._path)
+            nc = xarray.open_dataset(self._path,
+                    drop_variables=self._drop_variables,
+                    )
             msg = 'NetCDF file provided is not a surface output.'
-            assert 'adcirc_mesh' in nc.variables, msg
+            assert 'adcirc_mesh' in nc, msg
             msg = f'"{self._physical_variable}" variable not found in file: '
             msg += f'{self._path}, '
             msg += f'therefore, this is not a {self._filetype} file.'
-            assert self._physical_variable in nc.variables, msg
+            assert self._physical_variable in nc, msg
             return nc
         except OSError as e:
             if e.errno == -51:
@@ -194,7 +208,9 @@ class SurfaceOutput(metaclass=abc.ABCMeta):
     @property
     def _is_netcdf(self):
         try:
-            Dataset(self._path)
+            xarray.open_dataset(self._path,
+                    drop_variables=self._drop_variables
+                    )
         except:  # noqa: E722
             return False
 
@@ -216,7 +232,7 @@ class SurfaceOutputTimeseries(SurfaceOutput):
             raise StopIteration
 
     def __len__(self):
-        return self._ptr.dimensions['time'].size
+        return self._ptr['time'].size
 
     @property
     def index(self):
@@ -224,7 +240,7 @@ class SurfaceOutputTimeseries(SurfaceOutput):
 
     @index.setter
     def index(self, index):
-        if isinstance(self._ptr, Dataset):
+        if isinstance(self._ptr, (Dataset, xarray.Dataset)):
             self._values = self._ptr[self._physical_variable][index, :]
         else:
             raise NotImplementedError('ascii')
@@ -253,9 +269,9 @@ class ScalarSurfaceOutputTimeseries(SurfaceOutputTimeseries):
                 cax.cla()
             else:
                 cax = None
-            if np.any(self.values.mask):
+            if np.any(self.values.isnull()):
                 self.triangulation.set_mask(
-                    np.any(self.values.mask[self.triangulation.triangles], axis=1)
+                    np.any(self.values.isnull().values[self.triangulation.triangles], axis=1)
                 )
 
             if kwargs.get('elements', False):
@@ -278,7 +294,7 @@ class ScalarSurfaceOutputTimeseries(SurfaceOutputTimeseries):
             ax.set_xlabel('Longitude (°E)')
             ax.set_ylabel('Latitude (°N)')
             cbar = fig.colorbar(_ax, cax=cax, format='%.1f')
-            cbar.ax.set_ylabel(self._ptr.variables[self._physical_variable].units, rotation=90)
+            cbar.ax.set_ylabel(f"{self.values.standard_name.replace('_',' ')} ({self.values.units})", rotation=90)
 
         end_frame = end_frame % len(self) if end_frame < 0 else end_frame
         start_frame = start_frame % len(self) if start_frame < 0 else start_frame
