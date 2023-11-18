@@ -52,20 +52,24 @@ class SurfaceOutput(metaclass=abc.ABCMeta):
             self.triangulation.set_mask(
                 np.any(self.values.isnull().values[self.triangulation.triangles], axis=1)
             )
+        vmin=kwargs.get('vmin', np.min(self.values))
+        vmax=kwargs.get('vmax', np.max(self.values))
         _ax = plt.tricontourf(
             self.triangulation,
             self.values,
             cmap=kwargs.get('cmap', self._cmap),
             levels=kwargs.get('levels', self._levels),
-            vmin=kwargs.get('vmin', np.min(self.values)),
-            vmax=kwargs.get('vmax', np.max(self.values)),
+            vmin=vmin,
+            vmax=vmax,
         )
         if isinstance(self, SurfaceOutputTimeseries):
             plt.gca().set_title(self.time[self.index].strftime('%b %d, %Y %H:%M'))
         self.triangulation.set_mask(None)
         if kwargs.get('cbar') is not None:
-            cbar = plt.colorbar(_ax)
-            cbar.ax.set_ylabel(f"{self.values.standard_name.replace('_',' ')} ({self.values.units})", rotation=90)
+            cbar = plt.colorbar(_ax, location="bottom",
+                label = f"{self.values.standard_name.replace('_',' ')} ({self.values.units})"
+            )
+            cbar.ax.set_xlim(left=vmin, right=vmax)
         plt.gca().axis('scaled')
         return axes
 
