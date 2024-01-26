@@ -614,13 +614,9 @@ class Fort15:
                         # f'{len(self.mesh.open_boundaries)}',
                     ]
                 )
-            oceanbounds = self.mesh.boundaries.ocean.gdf
-            for index, row in self.mesh.boundaries.ocean.gdf.iterrows():
-                active = self.mesh.forcings.tides.get_active_constituents()
-                logging.info(f"ocean boundary {index+1}/{len(oceanbounds)}: {len(active)} constituents")
-                for constituent in active:
-                    logging.debug(constituent)
-                    f.append(fort15_line(constituent))
+            for constituent in self.mesh.forcings.tides.get_active_constituents():
+                f.append(fort15_line(constituent))
+                for index, row in self.mesh.boundaries.ocean.gdf.iterrows():
                     vertices = self.mesh.get_xy(crs='EPSG:4326').iloc[row.indexes, :].values
                     amp, phase = self.mesh.forcings.tides.tidal_dataset(constituent, vertices)
                     f.extend(

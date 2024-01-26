@@ -103,8 +103,128 @@ class DriverFile:
         else:
             f += f'{self._executable}\n'
 
-        f += 'cd ..'
-        return f
+        f += 'clean_directory\n' + 'cd ..'
+
+        return bash_function('main', f)
+
+    @property
+    def _dual_phase_run(self) -> str:
+        return (
+            self._bash_main_dual_phase
+            + '\n'
+            + self._run_coldstart_phase
+            + '\n'
+            + self._run_hotstart_phase
+        )
+
+    @property
+    def _bash_main_dual_phase(self) -> str:
+        error_exit_code = -1
+
+        f = 'SECONDS=0\n' 'run_coldstart_phase\n'
+
+        f += bash_if_statement(
+            if_condition=f'grep -Rq "ERROR: Elevation.gt.ErrorElev, ADCIRC stopping." {self._logfile}',
+            if_block='duration=$SECONDS\n'
+            'echo "ERROR: Elevation.gt.ErrorElev, ADCIRC stopping."\n'
+            'echo "Wallclock time: $(($duration / 60)) minutes and $(($duration % 60)) seconds."\n'
+            f'exit {error_exit_code}',
+            else_blocks=[
+                'run_hotstart_phase\n'
+                'duration=$SECONDS\n'
+                + bash_if_statement(
+                    if_condition=f'grep -Rq "ERROR: Elevation.gt.ErrorElev, ADCIRC stopping." {self._logfile}',
+                    if_block='echo "ERROR: Elevation.gt.ErrorElev, ADCIRC stopping."\n'
+                    'echo "Wallclock time: $(($duration / 60)) minutes and $(($duration % 60)) seconds."\n'
+                    f'exit {error_exit_code}',
+                ).strip('\n')
+            ],
+        )
+
+        f += 'echo "Wallclock time: $(($duration / 60)) minutes and $(($duration % 60)) seconds."'
+
+        return bash_function('main', f)
+
+    @property
+    def _run_coldstart_phase(self) -> str:
+        f = (
+            'rm -rf coldstart\n'
+            'mkdir coldstart\n'
+            'cd coldstart\n'
+            'ln -sf ../fort.14\n'
+            'ln -sf ../fort.13\n'
+            'ln -sf ../fort.15.coldstart ./fort.15\n'
+        )
+
+        if self._executable.startswith('p'):
+            if isinstance(self._server_config, SlurmConfig):
+                f += (
+                    'adcprep --np $SLURM_NTASKS --partmesh\n'
+                    'adcprep --np $SLURM_NTASKS --prepall\n'
+                )
+            else:
+                f += f'adcprep --np {self._nprocs} --partmesh\n'
+                f += f'adcprep --np {self._nprocs} --prepall\n'
+            f += f'{self._mpi} {self._executable} '
+        else:
+            f += f'{self._executable} '
+
+        if not isinstance(self._server_config, SlurmConfig):
+            f += f'2>&1 | tee ../{self._logfile}'
+
+        f += '\nclean_directory\n' 'cd ..'
+
+        return bash_function('run_coldstart_phase', f)
+
+    @property
+    def _run_hotstart_phase(self) -> str:
+        f = (
+            'rm -rf hotstart\n'
+            'mkdir hotstart\n'
+            'cd hotstart\n'
+            'ln -sf ../fort.14\n'
+            'ln -sf ../fort.13\n'
+            'ln -sf ../fort.15.hotstart ./fort.15\n'
+        )
+
+        if self._driver.netcdf is True:
+            f += 'ln -sf ../coldstart/fort.67.nc\n'
+        else:
+            f += 'ln -sf ../coldstart/fort.67\n'
+
+        if self._driver.wind_forcing is not None:
+            if self._driver.NWS in [17, 19, 20]:
+                f += (
+                    'ln -sf ../fort.22 ./fort.22\n'
+                    'aswip\n'
+                    f'mv NWS_{self._driver.NWS}_fort.22 fort.22\n'
+                )
+            elif self._driver.NWS in [8]:
+                f += 'ln -sf ../fort.22 ./fort.22\n'
+            else:
+                msg = f'unsupported NWS value {self._driver.NWS}'
+                raise NotImplementedError(msg)
+
+        if self._executable.startswith('p'):
+            if isinstance(self._server_config, SlurmConfig):
+                f += (
+                    'adcprep --np $SLURM_NTASKS --partmesh\n'
+                    'adcprep --np $SLURM_NTASKS --prepall\n'
+                )
+            else:
+                f += (
+                    f'adcprep --np {self._nprocs} --partmesh\n'
+                    f'adcprep --np {self._nprocs} --prepall\n'
+                )
+            f += f'{self._mpi} {self._executable} '
+        else:
+            f += f'{self._executable} '
+
+        if not isinstance(self._server_config, SlurmConfig):
+            f += f'2>&1 | tee -a ../{self._logfile}'
+        f += '\nclean_directory\n' 'cd ..'
+
+        return bash_function('run_hotstart_phase', f)
 
     @property
     def _clean_directory(self) -> str:

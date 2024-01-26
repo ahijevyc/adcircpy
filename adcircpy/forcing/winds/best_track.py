@@ -29,7 +29,8 @@ class BestTrackForcing(VortexTrack, WindForcing):
         interval_seconds: int = 3600,
         start_date: datetime = None,
         end_date: datetime = None,
-        spinup_time: timedelta = timedelta(hours=0),
+        *args,
+        **kwargs,
     ):
         if nws is None:
             nws = 20
