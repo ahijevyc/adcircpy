@@ -16,14 +16,14 @@ class BatchConfig(BaseServerConfig):
         ntasks: int,
         walltime: timedelta,
         memory: str = None,
-        queue : str = None,
+        queue : str = 'main',
         filename: str = 'batch.job',
         run_name: str = None,
         mail_user: str = None,
         modules: [str] = None,
         path_prefix: str = None,
         extra_commands: [str] = None,
-        launcher: str = 'mpiexec_mpt',
+        launcher: str = 'mpiexec',
         nodes: int = None,
     ):
         """
@@ -100,7 +100,10 @@ class BatchConfig(BaseServerConfig):
             f += f'#PBS -A {self._account}\n'
 
         if self._nodes is not None:
-            f += f'#PBS -l select={self._nodes}:ncpus={self._ntasks}:mpiprocs={self._ntasks}\n'
+            f += f'#PBS -l select={self._nodes}:ncpus={self._ntasks}:mpiprocs={self._ntasks}'
+            if self._memory is not None:
+                f += f':mem={self._memory}'
+            f += '\n'
 
         f += f'#PBS -j oe\n'
         f += f'#PBS -k eod\n'
@@ -111,12 +114,16 @@ class BatchConfig(BaseServerConfig):
         if self._queue is not None:
             f += f'#PBS -q {self._queue}\n'
 
-        if self._queue is not None:
+        if self._mail_user is not None:
             f += f'#PBS -M {self._mail_user}\n'
 
         f += f'\n' f'setenv TMPDIR /glade/scratch/{os.getenv("USER")}/temp\n'
         f += f'mkdir -p $TMPDIR\n'
-        f += f'module reset\n'
+        if self._modules is None:
+            f += f'module reset\n'
+        else:
+            f += f'module purge\n'
+            f += f'\n' f'module load {" ".join(module for module in self._modules)}\n'
 
         if self._path_prefix is not None:
             f += f'\n' f'setenv PATH {self._path_prefix}:$PATH\n'
