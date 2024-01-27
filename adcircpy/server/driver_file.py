@@ -157,7 +157,7 @@ class DriverFile:
         if isinstance(self._server_config, SlurmConfig):
             return self._server_config._launcher
         else:
-            return f'mpiexec_mpt'
+            return f'mpiexec -n {self._nprocs}'
 
     @property
     def _server_config(self) -> BaseServerConfig:
