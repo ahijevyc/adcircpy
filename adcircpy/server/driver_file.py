@@ -21,13 +21,14 @@ class DriverFile:
 
     @property
     def _script(self) -> str:
-        f = '#!/bin/csh\n'
+        # csh on derecho doesn't know module. use bash.
+        f = '#!/bin/bash\n'
 
         f += self._server_config._prefix
 
         if self._executable.startswith('p') and isinstance(self._server_config, int):
             if self._server_config > 1:
-                f += f'\nsetenv NPROCS {self._nprocs}\n'
+                f += f'\nexport NPROCS={self._nprocs}\n'
 
         f += '\n'
 

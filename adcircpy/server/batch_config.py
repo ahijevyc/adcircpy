@@ -117,7 +117,7 @@ class BatchConfig(BaseServerConfig):
         if self._mail_user is not None:
             f += f'#PBS -M {self._mail_user}\n'
 
-        f += f'\n' f'setenv TMPDIR /glade/scratch/{os.getenv("USER")}/temp\n'
+        f += f'\n' f'export TMPDIR={os.getenv("SCRATCH")}/temp\n'
         f += f'mkdir -p $TMPDIR\n'
         if self._modules is None:
             f += f'module reset\n'
@@ -126,7 +126,7 @@ class BatchConfig(BaseServerConfig):
             f += f'\n' f'module load {" ".join(module for module in self._modules)}\n'
 
         if self._path_prefix is not None:
-            f += f'\n' f'setenv PATH {self._path_prefix}:$PATH\n'
+            f += f'\n' f'export PATH={self._path_prefix}:$PATH\n'
 
         if self._extra_commands is not None:
             f += '\n'
