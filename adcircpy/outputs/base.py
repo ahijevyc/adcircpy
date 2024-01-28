@@ -32,7 +32,7 @@ class SurfaceOutput(metaclass=abc.ABCMeta):
         self._path = path
         self._crs = crs
         # avoid xarray error about scalar neta already existing
-        self._drop_variables = ["neta", "nvel", "max_nvdll", "max_nvell", "time"]
+        self._drop_variables = ["neta", "nvel"]
 
     def export(self, path, overwrite=False):
         coords = {i + 1: (self.x[i], self.y[i]) for i in range(len(self.values))}
@@ -63,7 +63,8 @@ class SurfaceOutput(metaclass=abc.ABCMeta):
             vmax=vmax,
         )
         if isinstance(self, SurfaceOutputTimeseries):
-            plt.gca().set_title(self.time[self.index].strftime('%b %d, %Y %H:%M'))
+            # .item() to convert numpy scalar to string
+            plt.gca().set_title(self._ptr.time[self.index].dt.strftime('%b %d, %Y %H:%M').item())
         self.triangulation.set_mask(None)
         if kwargs.get('cbar') is not None:
             cbar = plt.colorbar(_ax, location="bottom",
@@ -90,15 +91,6 @@ class SurfaceOutput(metaclass=abc.ABCMeta):
             return self._ptr['y'][:].data
         elif isinstance(self._ptr, xarray.Dataset):
             return self._ptr['y']
-        else:
-            raise NotImplementedError('ascii')
-
-    @property
-    def time(self):
-        if isinstance(self._ptr, Dataset):
-            return num2date(self._ptr['time'][:], self._ptr['time'].units)
-        elif isinstance(self._ptr, xarray.Dataset):
-            return self._ptr['time']
         else:
             raise NotImplementedError('ascii')
 
@@ -183,8 +175,6 @@ class SurfaceOutput(metaclass=abc.ABCMeta):
             nc = xarray.open_dataset(self._path,
                     drop_variables=self._drop_variables,
                     )
-            msg = 'NetCDF file provided is not a surface output.'
-            assert 'adcirc_mesh' in nc, msg
             msg = f'"{self._physical_variable}" variable not found in file: '
             msg += f'{self._path}, '
             msg += f'therefore, this is not a {self._filetype} file.'
@@ -294,7 +284,8 @@ class ScalarSurfaceOutputTimeseries(SurfaceOutputTimeseries):
             )
             ax.set_ylim(ymin=kwargs.get('ymin'), ymax=kwargs.get('ymax'), auto=True)
             ax.set_xlim(xmin=kwargs.get('xmin'), xmax=kwargs.get('xmax'), auto=True)
-            ax.set_title(self.time[i].strftime('%b %d, %Y %H:%M'))
+            # .item() to convert numpy scalar to string
+            ax.set_title(self._ptr.time[self.index].dt.strftime('%b %d, %Y %H:%M').item())
             ax.set_xlabel('Longitude (°E)')
             ax.set_ylabel('Latitude (°N)')
             cbar = fig.colorbar(_ax, cax=cax, format='%.1f')
