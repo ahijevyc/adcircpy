@@ -67,7 +67,9 @@ class SurfaceOutput(metaclass=abc.ABCMeta):
             plt.gca().set_title(self._ptr.time[self.index].dt.strftime('%b %d, %Y %H:%M').item())
         self.triangulation.set_mask(None)
         if kwargs.get('cbar') is not None:
-            cbar = plt.colorbar(_ax, location="bottom",
+            shrink = kwargs.get("shrink", 0.9)
+            aspect = kwargs.get("aspect", 30)
+            cbar = plt.colorbar(_ax, shrink=shrink, aspect=aspect, location="bottom",
                 label = f"{self.values.standard_name.replace('_',' ')} ({self.values.units})"
             )
             cbar.ax.set_xlim(left=vmin, right=vmax)
